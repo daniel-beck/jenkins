@@ -33,17 +33,16 @@ import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 @Extension
 @Restricted(NoExternalUse.class)
 public class AutoRefresh extends Telemetry {
 
-    private static final Map<Boolean, Set<String>> sessionsBySetting = new ConcurrentSkipListMap<>();
+    private static final Set<String> sessionsWithAutoRefresh = Collections.synchronizedSet(new HashSet<>());
+    private static final Set<String> sessionsWithoutAutoRefresh = Collections.synchronizedSet(new HashSet<>());
 
     @Nonnull
     @Override
@@ -71,16 +70,17 @@ public class AutoRefresh extends Telemetry {
 
     @Override
     public JSONObject createContent() {
-        if (sessionsBySetting.size() == 0) {
+        if (sessionsWithAutoRefresh.isEmpty() && sessionsWithoutAutoRefresh.isEmpty()) {
+            // no requests in the current period
             return null;
         }
-        Map<Boolean, Set<String>> currentSessions = new TreeMap<>(sessionsBySetting);
-        sessionsBySetting.clear();
 
         JSONObject payload = new JSONObject();
-        for (Map.Entry<Boolean, Set<String>> entry : currentSessions.entrySet()) {
-            payload.put(entry.getKey().toString(), entry.getValue().size());
-        }
+        payload.put("enabled", sessionsWithAutoRefresh.size());
+        payload.put("disabled", sessionsWithoutAutoRefresh.size());
+
+        sessionsWithAutoRefresh.clear();
+        sessionsWithoutAutoRefresh.clear();
         return payload;
     }
 
@@ -94,8 +94,11 @@ public class AutoRefresh extends Telemetry {
         HttpSession session = request.getSession(false);
         if (session != null) {
             String sessionId = session.getId();
-            sessionsBySetting.putIfAbsent(enabled, new HashSet<>());
-            sessionsBySetting.get(enabled).add(sessionId);
+            if (enabled) {
+                sessionsWithAutoRefresh.add(sessionId);
+            } else {
+                sessionsWithoutAutoRefresh.add(sessionId);
+            }
         }
     }
 }
