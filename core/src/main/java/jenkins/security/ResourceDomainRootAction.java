@@ -20,6 +20,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
@@ -82,29 +83,29 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     public static final ThreadLocal<Boolean> NOT_A_REAL_REQUEST = new ThreadLocal<>();
 
 
-    /**
-     *
-     * @param dbs
-     * @param key
-     * @param permissionCheck
-     * @return an identifier that can be passed as first argument into {@link #getRedirectUrl(String, String)}.
-     */
-    public String register(DirectoryBrowserSupport dbs, String key, Runnable permissionCheck) {
-        Authentication authentication = Jenkins.getAuthentication();
-        { // make sure the current user passes the permission check to begin with (detect bugs)
-            try (ACLContext unused = ACL.as(authentication)) {
-                permissionCheck.run();
-                LOGGER.info("Passed permission check for key: " + key + " dbs: " + dbs + " as: " + authentication);
-            } catch (Exception e) {
-                throw new RuntimeException("Unexpected exception when testing whether the current user passes the permission check.", e);
-            }
-        }
-        DirectoryBrowserSupportHolder holder = new DirectoryBrowserSupportHolder(key, dbs, permissionCheck, authentication, null, null, null, null);
-        UUID uuid = getUrlMappingTableForCurrentSession().register(key, holder);
-        globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
-        LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + key + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
-        return uuid.toString();
-    }
+//    /**
+//     *
+//     * @param dbs
+//     * @param key
+//     * @param permissionCheck
+//     * @return an identifier that can be passed as first argument into {@link #getRedirectUrl(String, String)}.
+//     */
+//    public String register(DirectoryBrowserSupport dbs, String key, Runnable permissionCheck) {
+//        Authentication authentication = Jenkins.getAuthentication();
+//        { // make sure the current user passes the permission check to begin with (detect bugs)
+//            try (ACLContext unused = ACL.as(authentication)) {
+//                permissionCheck.run();
+//                LOGGER.info("Passed permission check for key: " + key + " dbs: " + dbs + " as: " + authentication);
+//            } catch (Exception e) {
+//                throw new RuntimeException("Unexpected exception when testing whether the current user passes the permission check.", e);
+//            }
+//        }
+//        DirectoryBrowserSupportHolder holder = new DirectoryBrowserSupportHolder(key, dbs, permissionCheck, authentication, null, null, null, null);
+//        UUID uuid = getUrlMappingTableForCurrentSession().register(key, holder);
+//        globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
+//        LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + key + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
+//        return uuid.toString();
+//    }
 
     public String getRedirectUrl(String key, String restOfPath) {
         String rootUrl = ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl();
@@ -134,8 +135,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         }
     }
 
-    public void register(DirectoryBrowserSupport dbs, StaplerRequest req) {
+    public String register(DirectoryBrowserSupport dbs, StaplerRequest req) {
         String restOfPath  = req.getRestOfPath();
+        String dbsFile = req.getRestOfPath();
         String url = req.getAncestors().get(0).getRestOfUrl();
         List<Ancestor> ancestors = req.getAncestors();
         Object root = ancestors.get(0).getObject();
@@ -152,24 +154,27 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
 
         Authentication authentication = Jenkins.getAuthentication();
-        DirectoryBrowserSupportHolder holder = new DirectoryBrowserSupportHolder(url, dbs, () -> {}, authentication, url, ac, restOfPath, root);
+        DirectoryBrowserSupportHolder holder = new DirectoryBrowserSupportHolder(url, dbs, () -> {}, authentication, url, ac, restOfPath, root, dbsFile);
         UUID uuid = getUrlMappingTableForCurrentSession().register(url, holder);
         globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
         LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + url + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
+
+        return uuid.toString();
     }
 
     /**
      * Implements the browsing support for a specific {@link DirectoryBrowserSupport} like permission check.
      */
-    private static class DirectoryBrowserSupportHolder implements StaplerProxy, Comparable<DirectoryBrowserSupportHolder> {
-        private final Runnable permissionCheck;
-        private final DirectoryBrowserSupport dbs;
+    private static class DirectoryBrowserSupportHolder implements Comparable<DirectoryBrowserSupportHolder> {
+//        private final Runnable permissionCheck;
+//        private final DirectoryBrowserSupport dbs;
         private final String authentication;
         private final String key;
         private final String restOfUrl;
         private final String pathInfo;
         private final AccessControlled ac;
         private final Object root;
+//        private final String dbsFile;
 
         /**
          *
@@ -177,45 +182,53 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
          * @param dbs the {@link DirectoryBrowserSupport}
          * @param permissionCheck implements a permission check, as these URLs will bypass any other permission checks usually encountered through URLs like /job/foo/job/bar/ws.
          */
-        DirectoryBrowserSupportHolder(@Nonnull String key, @Nonnull DirectoryBrowserSupport dbs, @Nonnull Runnable permissionCheck, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root) {
-            this.key = key;
-            this.dbs = dbs;
-            this.permissionCheck = permissionCheck;
+        DirectoryBrowserSupportHolder(@Nonnull String key, @Nonnull DirectoryBrowserSupport dbs, @Nonnull Runnable permissionCheck, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
+            this.key = key.substring(0, restOfUrl.length()-dbsFile.length());
+//            this.dbs = dbs;
+//            this.permissionCheck = permissionCheck;
             this.authentication = authentication.getName();
             this.pathInfo = path;
             this.ac = ac;
-            this.restOfUrl = restOfUrl;
+            this.restOfUrl = restOfUrl.substring(0, restOfUrl.length()-dbsFile.length());
             this.root = root;
+//            this.dbsFile = dbsFile;
         }
 
-        public HttpResponse doDynamic() {
-            return this.dbs;
-        }
+//        public HttpResponse doDynamic() {
+//            return this.dbs;
+//        }
 
-        @Override
-        public Object getTarget() {
-            try (ACLContext unused = ACL.as(User.getById(authentication, false))) {
-                permissionCheck.run();
-            } catch (AccessDeniedException ade) {
-                throw ade;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
+//            try (ACLContext unused = ACL.as(User.getById(authentication, false))) {
+////                permissionCheck.run();
+//            } catch (AccessDeniedException ade) {
+//                throw ade;
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
 
             if (ac != null) {
-                NOT_A_REAL_REQUEST.set(true);
+                String restOfPath = req.getRestOfPath();
+                LOGGER.log(Level.INFO, "Performing a request as authentication: " + authentication + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
+
+                // TODO do I want something like this?
+                if (restOfPath.isEmpty()) {
+                    rsp.sendRedirect(302, Jenkins.get().getRootUrl() + key);
+                }
+
+//                NOT_A_REAL_REQUEST.set(true);
                 try (ACLContext unused = ACL.as(User.getById(authentication, true))) {
-                    Stapler.getCurrent().invoke(Stapler.getCurrentRequest(), Stapler.getCurrentResponse(), ac, restOfUrl);
+                    Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
                 } catch (AccessDeniedException ade) {
                     LOGGER.log(Level.INFO, "Failed permission check", ade);
                 } catch (Exception e) {
                     LOGGER.log(Level.INFO, "Something else failed", e);
                 } finally {
-                    NOT_A_REAL_REQUEST.set(false);
+//                    NOT_A_REAL_REQUEST.set(false);
                 }
             }
 
-            return this;
+//            return this;
         }
 
         @Override
@@ -225,7 +238,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
         @Override
         public String toString() {
-            return "[" + super.toString() + ", authentication=" + authentication + "; key=" + key + "; dbs=" + dbs + "; permissionCheck=" + permissionCheck + "]";
+            return "[" + super.toString() + ", authentication=" + authentication + "; key=" + key + "]";
         }
     }
 

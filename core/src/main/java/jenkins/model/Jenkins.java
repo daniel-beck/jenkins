@@ -4212,7 +4212,8 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
      * Binds /userContent/... to $JENKINS_HOME/userContent.
      */
     public DirectoryBrowserSupport doUserContent() {
-        return new DirectoryBrowserSupport(this,getRootPath().child("userContent"),"User content","folder.png",true).registerForResourceRootUrlUse("/userContent", () -> Jenkins.get().checkPermission(Jenkins.READ));
+        return new DirectoryBrowserSupport(this,getRootPath().child("userContent"),"User content","folder.png",true);
+        //.registerForResourceRootUrlUse("/userContent", () -> Jenkins.get().checkPermission(Jenkins.READ));
     }
 
     /**
