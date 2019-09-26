@@ -27,19 +27,12 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     private String resourceRootUrl;
 
+    private boolean allowImplicitRegistration;
+
     public ResourceDomainConfiguration() {
         load();
     }
 
-    public String getResourceRootUrl() {
-        return resourceRootUrl;
-    }
-
-    public void setResourceRootUrl(String resourceRootUrl) {
-        if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
-            this.resourceRootUrl = resourceRootUrl;
-        }
-    }
     @Nonnull
     @Override
     public GlobalConfigurationCategory getCategory() {
@@ -71,4 +64,20 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         return FormValidation.ok();
     }
 
+    public String getResourceRootUrl() {
+        return resourceRootUrl;
+    }
+
+    public void setResourceRootUrl(String resourceRootUrl) {
+        if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
+            this.resourceRootUrl = resourceRootUrl;
+        }
+    }
+    public boolean isAllowImplicitRegistration() {
+        return allowImplicitRegistration;
+    }
+
+    public void setAllowImplicitRegistration(boolean allowImplicitRegistration) {
+        this.allowImplicitRegistration = allowImplicitRegistration;
+    }
 }
