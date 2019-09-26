@@ -216,15 +216,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
                     rsp.sendRedirect(302, Jenkins.get().getRootUrl() + key);
                 }
 
-//                NOT_A_REAL_REQUEST.set(true);
                 try (ACLContext unused = ACL.as(User.getById(authentication, true))) {
                     Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
                 } catch (AccessDeniedException ade) {
                     LOGGER.log(Level.INFO, "Failed permission check", ade);
                 } catch (Exception e) {
                     LOGGER.log(Level.INFO, "Something else failed", e);
-                } finally {
-//                    NOT_A_REAL_REQUEST.set(false);
                 }
             }
 
