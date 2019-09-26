@@ -932,4 +932,11 @@ public class DirectoryBrowserSupportTest {
         File resourceFile = new File(resourceUrl.toURI());
         return FileUtils.readFileToString(resourceFile);
     }
+
+    @Issue("JENKINS-41891")
+    @Test
+    public void secondDomainBasics() {
+        JenkinsRule.WebClient wc = j.createWebClient();
+//        wc.
+    }
 }

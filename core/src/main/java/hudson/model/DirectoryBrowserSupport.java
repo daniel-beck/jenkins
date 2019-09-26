@@ -24,6 +24,7 @@
 package hudson.model;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.ExtensionList;
 import hudson.FilePath;
 import hudson.Util;
 import java.io.IOException;
@@ -54,6 +55,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
+import jenkins.security.ResourceDomainConfiguration;
+import jenkins.security.ResourceDomainRootAction;
 import jenkins.util.SystemProperties;
 import jenkins.util.VirtualFile;
 import org.apache.commons.io.IOUtils;
@@ -87,6 +90,11 @@ public final class DirectoryBrowserSupport implements HttpResponse {
     private final String icon;
     private final boolean serveDirIndex;
     private String indexFileName = "index.html";
+
+    /**
+     * Keeps track of whether this has been registered from use via {@link ResourceDomainRootAction}.
+     */
+    private String resourceRootUrlKey;
 
     /**
      * @deprecated as of 1.297
@@ -134,6 +142,26 @@ public final class DirectoryBrowserSupport implements HttpResponse {
         this.title = title;
         this.icon = icon;
         this.serveDirIndex = serveDirIndex;
+    }
+
+    /**
+     * Register this instance for use with the resource root URL.
+     *
+     * @param key the identifier for this kind of directory browser support.
+     * @param permissionCheck
+     * @return
+     *
+     * @since TODO
+     */
+    // TODO can we automatically determine key based on owner/title/... properties?
+    public DirectoryBrowserSupport registerForResourceRootUrlUse(String key, Runnable permissionCheck) {
+        try {
+            resourceRootUrlKey = ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, key, permissionCheck);
+            LOGGER.log(Level.INFO, "Registered " + this + " for key: " + key + " and received resourceRootUrlKey: " + resourceRootUrlKey);
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "Failed to register for resource root URL use", ex);
+        }
+        return this;
     }
 
     public void generateResponse(StaplerRequest req, StaplerResponse rsp, Object node) throws IOException, ServletException {
@@ -339,14 +367,23 @@ public final class DirectoryBrowserSupport implements HttpResponse {
             // pseudo file name to let the Stapler set text/plain
             rsp.serveFile(req, in, lastModified, -1, length, "plain.txt");
         } else {
-            String csp = SystemProperties.getString(DirectoryBrowserSupport.class.getName() + ".CSP", DEFAULT_CSP_VALUE);
-            if (!csp.trim().equals("")) {
-                // allow users to prevent sending this header by setting empty system property
-                for (String header : new String[]{"Content-Security-Policy", "X-WebKit-CSP", "X-Content-Security-Policy"}) {
-                    rsp.setHeader(header, csp);
+            boolean isResourceDomainRequest = ResourceDomainConfiguration.isResourceRequest(req);
+            if (resourceRootUrlKey != null && !isResourceDomainRequest) {
+                // redirect to second domain
+                rsp.sendRedirect(302, ExtensionList.lookupSingleton(ResourceDomainRootAction.class).getRedirectUrl(resourceRootUrlKey, req.getRestOfPath()));
+            } else {
+                if (!isResourceDomainRequest) {
+                    // if we're serving this from the main domain, set CSP headers
+                    String csp = SystemProperties.getString(DirectoryBrowserSupport.class.getName() + ".CSP", DEFAULT_CSP_VALUE);
+                    if (!csp.trim().equals("")) {
+                        // allow users to prevent sending this header by setting empty system property
+                        for (String header : new String[]{"Content-Security-Policy", "X-WebKit-CSP", "X-Content-Security-Policy"}) {
+                            rsp.setHeader(header, csp);
+                        }
+                    }
                 }
+                rsp.serveFile(req, in, lastModified, -1, length, baseFile.getName());
             }
-            rsp.serveFile(req, in, lastModified, -1, length, baseFile.getName() );
         }
     }
     
