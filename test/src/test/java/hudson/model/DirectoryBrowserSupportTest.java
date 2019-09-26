@@ -936,7 +936,9 @@ public class DirectoryBrowserSupportTest {
     @Issue("JENKINS-41891")
     @Test
     public void secondDomainBasics() {
-        JenkinsRule.WebClient wc = j.createWebClient();
-//        wc.
+        // DBS on primary domain forwards to second domain when trying to access a file URL
+        // second domain root page is 404 with message
+        // second domain action index page is 404 with message
+        // second domain non-existent DBS redirects to root page
     }
 }
