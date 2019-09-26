@@ -144,40 +144,9 @@ public final class DirectoryBrowserSupport implements HttpResponse {
         this.serveDirIndex = serveDirIndex;
     }
 
-//    /**
-//     * Register this instance for use with the resource root URL.
-//     *
-//     * @param key the identifier for this kind of directory browser support.
-//     * @param permissionCheck
-//     * @return
-//     *
-//     * @since TODO
-//     */
-//    // TODO can we automatically determine key based on owner/title/... properties?
-//    public DirectoryBrowserSupport registerForResourceRootUrlUse(String key, Runnable permissionCheck) {
-//        try {
-//            resourceRootUrlKey = ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, key, permissionCheck);
-//            LOGGER.log(Level.INFO, "Registered " + this + " for key: " + key + " and received resourceRootUrlKey: " + resourceRootUrlKey);
-//        } catch (Exception ex) {
-//            LOGGER.log(Level.WARNING, "Failed to register for resource root URL use", ex);
-//        }
-//        return this;
-//    }
-
-    /**
-     * Register implicitly for use on the resources domain
-     */
-    private void implicitRegistration(StaplerRequest req) {
-        resourceRootUrlKey = ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, req);
-    }
-
     public void generateResponse(StaplerRequest req, StaplerResponse rsp, Object node) throws IOException, ServletException {
-        Boolean aBoolean = ResourceDomainRootAction.NOT_A_REAL_REQUEST.get();
-        if (aBoolean != null && aBoolean.booleanValue()) {
-            return;
-        }
         if (!ResourceDomainConfiguration.isResourceRequest(req)) {
-            implicitRegistration(req);
+            resourceRootUrlKey = ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, req);
         }
 
         try {
