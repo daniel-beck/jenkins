@@ -4213,7 +4213,6 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
      */
     public DirectoryBrowserSupport doUserContent() {
         return new DirectoryBrowserSupport(this,getRootPath().child("userContent"),"User content","folder.png",true);
-        //.registerForResourceRootUrlUse("/userContent", () -> Jenkins.get().checkPermission(Jenkins.READ));
     }
 
     /**
