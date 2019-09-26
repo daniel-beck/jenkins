@@ -164,7 +164,22 @@ public final class DirectoryBrowserSupport implements HttpResponse {
         return this;
     }
 
+    /**
+     * Register implicitly for use on the resources domain
+     */
+    private void implicitRegistration(StaplerRequest req) {
+        ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, req);
+    }
+
     public void generateResponse(StaplerRequest req, StaplerResponse rsp, Object node) throws IOException, ServletException {
+        Boolean aBoolean = ResourceDomainRootAction.NOT_A_REAL_REQUEST.get();
+        if (aBoolean != null && aBoolean.booleanValue()) {
+            return;
+        }
+        if (!ResourceDomainConfiguration.isResourceRequest(req)) {
+            implicitRegistration(req);
+        }
+
         try {
             serveFile(req,rsp,base,icon,serveDirIndex);
         } catch (InterruptedException e) {
