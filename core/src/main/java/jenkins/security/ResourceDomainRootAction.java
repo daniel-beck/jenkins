@@ -184,8 +184,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
                     Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
                 } catch (AccessDeniedException ade) {
                     LOGGER.log(Level.INFO, "Failed permission check", ade);
+                    rsp.sendError(403, "Failed permission check: " + ade.getMessage());
+                    return;
                 } catch (Exception e) {
                     LOGGER.log(Level.INFO, "Something else failed", e);
+                    rsp.sendError(404, "Failed: " + e.getMessage());
+                    return;
                 }
             }
         }
