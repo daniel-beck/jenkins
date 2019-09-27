@@ -163,6 +163,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             AccessControlled ac = this.ac.get();
 
             if (ac == null) {
+                // TODO redirect to 'browserUrl'
                 rsp.sendError(404, "Resource expired");
             }
 
@@ -236,8 +237,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             { // logging
                 LOGGER.log(Level.INFO, "keyToUuid contained for key: " + key + " the UUID: " + keyToUuid.get(key));
             }
-            UUID oldUuid = keyToUuid.put(key, UUID.randomUUID());
-            UUID uuid = (UUID)keyToUuid.get(key);
+            // TODO better determine whether a holder needs to be updated for a given key, e.g. after project renames
+            keyToUuid.putIfAbsent(key, UUID.randomUUID());
+            UUID uuid = keyToUuid.get(key);
             { // logging
                 LOGGER.log(Level.INFO, "keyToUuid contains now for key: " + key + " the UUID: " + uuid + " (" + keyToUuid.size() + " total elements)");
             }
