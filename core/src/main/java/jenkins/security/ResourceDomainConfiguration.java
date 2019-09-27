@@ -71,6 +71,7 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
             // only accept valid configurations
             this.resourceRootUrl = resourceRootUrl;
+            // TODO clear existing cached URLs when clearing the second domain?
         }
     }
 
