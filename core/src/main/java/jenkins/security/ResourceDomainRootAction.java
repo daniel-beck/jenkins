@@ -68,13 +68,25 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     }
 
     public Object getDynamic(String id, StaplerRequest req, StaplerResponse rsp) throws Exception {
-        UUID uuid = UUID.fromString(id);
-        if (ResourceDomainConfiguration.isResourceRequest(req)) {
-            ReferenceHolder holder = globalTable.lookup(uuid);
-            if (holder != null) {
-                return holder;
-            }
+        if (!ResourceDomainConfiguration.isResourceRequest(req)) {
+            rsp.sendError(404, "Cannot handle requests to this URL unless on Jenkins resource URL");
+            return null;
         }
+
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException ex) {
+            // not a UUID
+            rsp.sendError(404);
+            return null;
+        }
+
+        ReferenceHolder holder = globalTable.lookup(uuid);
+        if (holder != null) {
+            return holder;
+        }
+
         rsp.sendRedirect(302, getResourceRootUrl());
         return null;
     }
