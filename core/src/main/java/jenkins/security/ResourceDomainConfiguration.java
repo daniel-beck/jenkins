@@ -67,6 +67,10 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
     }
 
     public static boolean isResourceRequest(HttpServletRequest req) {
-        return ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl().contains(req.getHeader("Host")); // TODO implement a proper check
+        return get().getResourceRootUrl().contains(req.getHeader("Host")); // TODO implement a proper check
+    }
+
+    public static ResourceDomainConfiguration get() {
+        return ExtensionList.lookupSingleton(ResourceDomainConfiguration.class);
     }
 }
