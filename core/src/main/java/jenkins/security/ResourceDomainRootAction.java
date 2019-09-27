@@ -63,13 +63,17 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         return "static-files";
     }
 
-    public HttpResponse doIndex() {
-        return HttpResponses.redirectTo(302, getResourceRootUrl());
+    public void doIndex(StaplerRequest req, StaplerResponse rsp) throws IOException {
+        if (!ResourceDomainConfiguration.isResourceRequest(req)) {
+            rsp.sendError(404, "Cannot handle requests to this URL unless on Jenkins resource URL.");
+        } else {
+            rsp.sendError(404, "Jenkins serves only static files on this domain.");
+        }
     }
 
     public Object getDynamic(String id, StaplerRequest req, StaplerResponse rsp) throws Exception {
         if (!ResourceDomainConfiguration.isResourceRequest(req)) {
-            rsp.sendError(404, "Cannot handle requests to this URL unless on Jenkins resource URL");
+            rsp.sendError(404, "Cannot handle requests to this URL unless on Jenkins resource URL.");
             return null;
         }
 
@@ -78,7 +82,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             uuid = UUID.fromString(id);
         } catch (IllegalArgumentException ex) {
             // not a UUID
-            rsp.sendError(404);
+            rsp.sendError(404, "Jenkins serves only static files on this domain.");
             return null;
         }
 
