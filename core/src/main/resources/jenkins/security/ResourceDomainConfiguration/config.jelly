@@ -29,8 +29,5 @@ THE SOFTWARE.
         <f:entry title="${%Resource root URL}" field="resourceRootUrl">
             <f:textbox/>
         </f:entry>
-        <f:entry title="${%Allow implicit URL registration}" field="allowImplicitRegistration">
-            <f:checkbox/>
-        </f:entry>
     </f:section>
 </j:jelly>
