@@ -54,10 +54,11 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     public FormValidation doCheckResourceRootUrl(String resourceRootUrl) {
         if (ExtensionList.lookupSingleton(RootUrlNotSetMonitor.class).isActivated()) {
-            return FormValidation.warning("Can only set resource root URL if regular root URL is set");
+            // TODO is this a prerequisite?
+            return FormValidation.warning("Can only set resource root URL if regular root URL is set"); // TODO i18n
         }
         if (!UrlHelper.isValidRootUrl(resourceRootUrl)) {
-            FormValidation.warning("Not a valid URL");
+            FormValidation.warning("Not a valid URL"); // TODO i18n
         }
         return FormValidation.ok();
     }
@@ -68,6 +69,7 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     public void setResourceRootUrl(String resourceRootUrl) {
         if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
+            // only accept valid configurations
             this.resourceRootUrl = resourceRootUrl;
         }
     }

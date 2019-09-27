@@ -26,23 +26,23 @@ public class ResourceDomainFilter implements Filter {
     }
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-
-    }
-
-    @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         if (servletRequest instanceof HttpServletRequest) {
             HttpServletRequest httpServletRequest = (HttpServletRequest)servletRequest;
             HttpServletResponse httpServletResponse = (HttpServletResponse)servletResponse;
             String path = httpServletRequest.getPathInfo();
             if (ResourceDomainConfiguration.isResourceRequest(httpServletRequest) && !path.startsWith("/static-files/") && !path.equals("/static-files")) {
-                LOGGER.log(Level.INFO, "Rejecting request to " + httpServletRequest.getRequestURL() + " from " + httpServletRequest.getRemoteAddr() + " on resource domain");
+                LOGGER.log(Level.FINE, "Rejecting request to " + httpServletRequest.getRequestURL() + " from " + httpServletRequest.getRemoteAddr() + " on resource domain");
                 httpServletResponse.sendError(404, "Jenkins serves only static files on this domain.");
                 return;
             }
         }
         filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+
     }
 
     @Override
