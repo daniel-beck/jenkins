@@ -1,14 +1,12 @@
 package jenkins.security;
 
 import hudson.Extension;
-import hudson.ExtensionList;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.model.UnprotectedRootAction;
 import hudson.model.User;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 import hudson.security.AccessControlled;
-import hudson.util.HttpResponses;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
 import org.acegisecurity.Authentication;
@@ -111,26 +109,26 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     public String register(DirectoryBrowserSupport dbs, StaplerRequest req) {
         String restOfPath  = req.getRestOfPath();
         String dbsFile = req.getRestOfPath();
-        String url = req.getAncestors().get(0).getRestOfUrl();
+        String completeUrl = req.getAncestors().get(0).getRestOfUrl();
         List<Ancestor> ancestors = req.getAncestors();
         Object root = ancestors.get(0).getObject();
-        AccessControlled ac = null;
+        AccessControlled nearestAccessControlled = null;
 
         // find nearest ancestor that's AccessControlled
         for (Ancestor ancestor : ancestors) {
             Object o = ancestor.getObject();
             if (o instanceof AccessControlled) {
-                ac = (AccessControlled)o;
+                nearestAccessControlled = (AccessControlled)o;
                 restOfPath = ancestor.getRestOfUrl();
             }
         }
 
 
         Authentication authentication = Jenkins.getAuthentication();
-        ReferenceHolder holder = new ReferenceHolder(url, authentication, url, ac, restOfPath, root, dbsFile);
-        UUID uuid = getUrlMappingTableForCurrentSession().register(url, holder);
-        globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
-        LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + url + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
+        ReferenceHolder holder = new ReferenceHolder(completeUrl, authentication, nearestAccessControlled, restOfPath, dbsFile);
+        UUID uuid = getUrlMappingTableForCurrentSession().getOrCreateUuidForHolder(holder);
+        globalTable.register(uuid, getUrlMappingTableForCurrentSession().getHolderForUuid(uuid)); // TODO perhaps best done in #getUuidForHolder?
+        LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + completeUrl + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
 
         return uuid.toString();
     }
@@ -142,21 +140,17 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         private final String authenticationName;
         private final String browserUrl;
         private final String restOfUrl;
-        private final String pathInfo;
         private final WeakReference<AccessControlled> ac;
-        private final Object root;
 
-        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authenticationName, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
-            this.browserUrl = browserUrl.substring(0, restOfUrl.length() - dbsFile.length());
+        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authenticationName, AccessControlled ac, String restOfUrl, String dbsFile) {
+            this.browserUrl = browserUrl.substring(0, browserUrl.length() - dbsFile.length());
             if (authenticationName == Jenkins.ANONYMOUS) {
                 this.authenticationName = null;
             } else {
                 this.authenticationName = authenticationName.getName();
             }
-            this.pathInfo = path;
             this.ac = new WeakReference<>(ac);
             this.restOfUrl = restOfUrl.substring(0, restOfUrl.length() - dbsFile.length());
-            this.root = root;
         }
 
         public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
@@ -229,15 +223,17 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         private final Map<String, UUID> keyToUuid = new TreeMap<>();
         private final Map<UUID, ReferenceHolder> uuidToHolder = new TreeMap<>();
 
-        public UUID register(@Nonnull String key, @Nonnull ReferenceHolder holder) {
-            { // logging
-                LOGGER.log(Level.INFO, "keyToUuid contained for key: " + key + " the UUID: " + keyToUuid.get(key));
+        private synchronized UUID getOrCreateUuidForHolder(@Nonnull ReferenceHolder holder) {
+            String key = holder.browserUrl;
+
+            if (validHolderExistsAlready(holder)) {
+                return keyToUuid.get(key);
             }
-            // TODO better determine whether a holder needs to be updated for a given key, e.g. after project renames
-            keyToUuid.putIfAbsent(key, UUID.randomUUID());
+
+            keyToUuid.put(key, UUID.randomUUID());
             UUID uuid = keyToUuid.get(key);
             { // logging
-                LOGGER.log(Level.INFO, "keyToUuid contains now for key: " + key + " the UUID: " + uuid + " (" + keyToUuid.size() + " total elements)");
+                LOGGER.log(Level.INFO, "keyToUuid contains now for key: " + key + " the UUID: " + uuid + " (" + keyToUuid.size() + " total elements in session)");
             }
 
             { // logging
@@ -246,10 +242,32 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             ReferenceHolder oldHolder = uuidToHolder.putIfAbsent(uuid, holder);
             ReferenceHolder newHolder = uuidToHolder.get(uuid);
             { // logging
-                LOGGER.log(Level.INFO, "uuidToHolder contains now for UUID: " + uuid + " the holder: " + holder + " (" + uuidToHolder.size() + " total elements)");
+                LOGGER.log(Level.INFO, "uuidToHolder contains now for UUID: " + uuid + " the holder: " + holder + " (" + uuidToHolder.size() + " total elements in session)");
             }
 
             return uuid;
+        }
+
+        private synchronized @CheckForNull ReferenceHolder getHolderForUuid(@Nonnull UUID uuid) {
+            return uuidToHolder.get(uuid);
+        }
+
+        private boolean validHolderExistsAlready(ReferenceHolder newHolder) {
+            String key = newHolder.browserUrl;
+            // TODO better determine whether a holder needs to be updated for a given key, e.g. after project renames
+            if (!keyToUuid.containsKey(key)) {
+                return false;
+            }
+
+            // this key is known
+            UUID oldUuid = keyToUuid.get(key);
+            ReferenceHolder oldHolder = uuidToHolder.get(oldUuid);
+            AccessControlled oldAccessControlled = oldHolder.ac.get();
+            if (oldAccessControlled == null) {
+                return false;
+            }
+
+            return oldAccessControlled == newHolder.ac.get();
         }
     }
 
@@ -260,24 +278,28 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     private static class GlobalTable {
         private final HashMap<UUID, WeakReference<ReferenceHolder>> uuidToHolder = new HashMap<>();
 
-        public void register(@Nonnull UUID uuid, @Nonnull ReferenceHolder holder) {
+        private void register(@Nonnull UUID uuid, @Nonnull ReferenceHolder newHolder) {
             if (uuidToHolder.containsKey(uuid)) {
                 // TODO leave this in or remove?
-                ReferenceHolder h = uuidToHolder.get(uuid).get();
-                if (h == null) {
+                ReferenceHolder oldHolder = uuidToHolder.get(uuid).get();
+                if (oldHolder == null) {
                     LOGGER.log(Level.INFO, "Re-registering for UUID " + uuid + " which was expired");
                 } else {
-                    LOGGER.log(Level.WARNING, "Re-registering for UUID " + uuid + " which was NOT expired and pointed to " + h);
+                    if (oldHolder == newHolder) {
+                        // same object
+                        return;
+                    }
+                    LOGGER.log(Level.WARNING, "Re-registering for UUID " + uuid + " which was NOT expired and pointed to " + oldHolder);
                 }
             } else {
                 LOGGER.log(Level.INFO, "Registering for UUID " + uuid + " which was unknown before");
             }
-            uuidToHolder.putIfAbsent(uuid, new WeakReference<>(holder));
-            LOGGER.log(Level.INFO, "Global table now contains " + uuidToHolder.size() + " entries");
+            // TODO wtf is going on here
+            uuidToHolder.put(uuid, new WeakReference<>(newHolder));
+            LOGGER.log(Level.INFO, "Global table now contains " + uuidToHolder.size() + " entries globally");
         }
 
-        public @CheckForNull
-        ReferenceHolder lookup(@Nonnull UUID uuid) {
+        private @CheckForNull ReferenceHolder lookup(@Nonnull UUID uuid) {
             WeakReference<ReferenceHolder> reference = uuidToHolder.get(uuid);
             if (reference == null) {
                 return null;
