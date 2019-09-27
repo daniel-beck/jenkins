@@ -138,16 +138,20 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
      * Implements the browsing support for a specific {@link DirectoryBrowserSupport} like permission check.
      */
     private static class ReferenceHolder {
-        private final String authentication;
+        private final String authenticationName;
         private final String browserUrl;
         private final String restOfUrl;
         private final String pathInfo;
         private final AccessControlled ac;
         private final Object root;
 
-        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
+        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authenticationName, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
             this.browserUrl = browserUrl.substring(0, restOfUrl.length() - dbsFile.length());
-            this.authentication = authentication.getName();
+            if (authenticationName == Jenkins.ANONYMOUS) {
+                this.authenticationName = null;
+            } else {
+                this.authenticationName = authenticationName.getName();
+            }
             this.pathInfo = path;
             this.ac = ac;
             this.restOfUrl = restOfUrl.substring(0, restOfUrl.length() - dbsFile.length());
@@ -157,14 +161,26 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
             if (ac != null) {
                 String restOfPath = req.getRestOfPath();
-                LOGGER.log(Level.INFO, "Performing a request as authentication: " + authentication + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
 
                 // TODO do I want something like this?
                 if (restOfPath.isEmpty()) {
-                    rsp.sendRedirect(302, Jenkins.get().getRootUrl() + browserUrl);
+                    String url = Jenkins.get().getRootUrl() + browserUrl;
+                    LOGGER.log(Level.INFO, "Forwarding a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath + " to url: " + url);
+                    rsp.sendRedirect(302, url);
+                    return;
                 }
 
-                try (ACLContext unused = ACL.as(User.getById(authentication, true))) {
+                LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
+
+                Authentication auth = Jenkins.ANONYMOUS;
+                if (authenticationName != null) {
+                    User user = User.getById(authenticationName, false);
+                    if (user != null) {
+                        auth = user.impersonate();
+                    }
+                }
+
+                try (ACLContext unused = ACL.as(auth)) {
                     Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
                 } catch (AccessDeniedException ade) {
                     LOGGER.log(Level.INFO, "Failed permission check", ade);
@@ -176,7 +192,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
         @Override
         public String toString() {
-            return "[" + super.toString() + ", authentication=" + authentication + "; key=" + browserUrl + "]";
+            return "[" + super.toString() + ", authentication=" + authenticationName + "; key=" + browserUrl + "]";
         }
     }
 
