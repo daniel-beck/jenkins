@@ -145,7 +145,7 @@ public final class DirectoryBrowserSupport implements HttpResponse {
     }
 
     public void generateResponse(StaplerRequest req, StaplerResponse rsp, Object node) throws IOException, ServletException {
-        if (!ResourceDomainConfiguration.isResourceRequest(req)) {
+        if (!ResourceDomainConfiguration.isResourceRequest(req) && ResourceDomainConfiguration.isResourceDomainConfigured()) {
             resourceRootUrlKey = ExtensionList.lookupSingleton(ResourceDomainRootAction.class).register(this, req);
         }
 
