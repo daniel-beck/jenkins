@@ -123,5 +123,12 @@ public class ResourceDomainTest {
 
     }
 
-    // project related action (like HTML Publisher) and rename project -> URL still works (depending on where we start the re-request)
+    // project related action (like HTML Publisher) and rename project -> URL still works (depending on where we start the re-request?)
+
+    // access a Run's artifacts and the run gets deleted
+    // - access lastSuccessfulBuild's artifacts and a new build finishes
+    // access a Run's artifacts and the project gets renamed
+    // access a Run's artifacts and another project takes over this project's name (dual rename)
+
+    // Underlying the model of ResourceHolder is the assumption that AccessControlled's are typically going to implement a necessary permission check on access (~StaplerProxy), not in their getters.
 }
