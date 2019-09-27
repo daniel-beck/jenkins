@@ -70,7 +70,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     public Object getDynamic(String id, StaplerResponse rsp) throws Exception {
         UUID uuid = UUID.fromString(id);
         if (ResourceDomainConfiguration.isResourceRequest(Stapler.getCurrentRequest())) {
-            DirectoryBrowserSupportHolder holder = globalTable.lookup(uuid);
+            ReferenceHolder holder = globalTable.lookup(uuid);
             if (holder != null) {
                 return holder;
             }
@@ -126,7 +126,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
 
         Authentication authentication = Jenkins.getAuthentication();
-        DirectoryBrowserSupportHolder holder = new DirectoryBrowserSupportHolder(url, dbs, () -> {}, authentication, url, ac, restOfPath, root, dbsFile);
+        ReferenceHolder holder = new ReferenceHolder(url, dbs, () -> {}, authentication, url, ac, restOfPath, root, dbsFile);
         UUID uuid = getUrlMappingTableForCurrentSession().register(url, holder);
         globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
         LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + url + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
@@ -137,7 +137,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     /**
      * Implements the browsing support for a specific {@link DirectoryBrowserSupport} like permission check.
      */
-    private static class DirectoryBrowserSupportHolder implements Comparable<DirectoryBrowserSupportHolder> {
+    private static class ReferenceHolder {
         private final String authentication;
         private final String browserUrl;
         private final String restOfUrl;
@@ -151,7 +151,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
          * @param dbs the {@link DirectoryBrowserSupport}
          * @param permissionCheck implements a permission check, as these URLs will bypass any other permission checks usually encountered through URLs like /job/foo/job/bar/ws.
          */
-        DirectoryBrowserSupportHolder(@Nonnull String browserUrl, @Nonnull DirectoryBrowserSupport dbs, @Nonnull Runnable permissionCheck, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
+        ReferenceHolder(@Nonnull String browserUrl, @Nonnull DirectoryBrowserSupport dbs, @Nonnull Runnable permissionCheck, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
             this.browserUrl = browserUrl.substring(0, restOfUrl.length() - dbsFile.length());
             this.authentication = authentication.getName();
             this.pathInfo = path;
@@ -191,9 +191,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
      */
     private static class SessionTable {
         private final Map<String, UUID> keyToUuid = new TreeMap<>();
-        private final Map<UUID, DirectoryBrowserSupportHolder> uuidToHolder = new TreeMap<>();
+        private final Map<UUID, ReferenceHolder> uuidToHolder = new TreeMap<>();
 
-        public UUID register(@Nonnull String key, @Nonnull  DirectoryBrowserSupportHolder holder) {
+        public UUID register(@Nonnull String key, @Nonnull ReferenceHolder holder) {
             { // logging
                 LOGGER.log(Level.INFO, "keyToUuid contained for key: " + key + " the UUID: " + keyToUuid.get(key));
             }
@@ -206,8 +206,8 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             { // logging
                 LOGGER.log(Level.INFO, "uuidToHolder contained for UUID: " + uuid + " the holder: " + uuidToHolder.get(uuid));
             }
-            DirectoryBrowserSupportHolder oldHolder = uuidToHolder.putIfAbsent(uuid, holder);
-            DirectoryBrowserSupportHolder newHolder = uuidToHolder.get(uuid);
+            ReferenceHolder oldHolder = uuidToHolder.putIfAbsent(uuid, holder);
+            ReferenceHolder newHolder = uuidToHolder.get(uuid);
             { // logging
                 LOGGER.log(Level.INFO, "uuidToHolder contains now for UUID: " + uuid + " the holder: " + holder + " (" + uuidToHolder.size() + " total elements)");
             }
@@ -217,16 +217,16 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     }
 
     /**
-     * Utility class to keep a map from UUID to {@link DirectoryBrowserSupportHolder} through weak references.
+     * Utility class to keep a map from UUID to {@link ReferenceHolder} through weak references.
      * Strong references are handled by the per-session {@link SessionTable} and therefore evicted when sessions are.
      */
     private static class GlobalTable {
-        private final HashMap<UUID, WeakReference<DirectoryBrowserSupportHolder>> uuidToHolder = new HashMap<>();
+        private final HashMap<UUID, WeakReference<ReferenceHolder>> uuidToHolder = new HashMap<>();
 
-        public void register(@Nonnull UUID uuid, @Nonnull DirectoryBrowserSupportHolder holder) {
+        public void register(@Nonnull UUID uuid, @Nonnull ReferenceHolder holder) {
             if (uuidToHolder.containsKey(uuid)) {
                 // TODO leave this in or remove?
-                DirectoryBrowserSupportHolder h = uuidToHolder.get(uuid).get();
+                ReferenceHolder h = uuidToHolder.get(uuid).get();
                 if (h == null) {
                     LOGGER.log(Level.INFO, "Re-registering for UUID " + uuid + " which was expired");
                 } else {
@@ -239,8 +239,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             LOGGER.log(Level.INFO, "Global table now contains " + uuidToHolder.size() + " entries");
         }
 
-        public @CheckForNull DirectoryBrowserSupportHolder lookup(@Nonnull UUID uuid) {
-            WeakReference<DirectoryBrowserSupportHolder> reference = uuidToHolder.get(uuid);
+        public @CheckForNull
+        ReferenceHolder lookup(@Nonnull UUID uuid) {
+            WeakReference<ReferenceHolder> reference = uuidToHolder.get(uuid);
             if (reference == null) {
                 return null;
             }
