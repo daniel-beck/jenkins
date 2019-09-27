@@ -192,11 +192,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             } catch (AccessDeniedException ade) {
                 LOGGER.log(Level.INFO, "Failed permission check", ade);
                 rsp.sendError(403, "Failed permission check: " + ade.getMessage());
-                return;
             } catch (Exception e) {
                 LOGGER.log(Level.INFO, "Something else failed", e);
                 rsp.sendError(404, "Failed: " + e.getMessage());
-                return;
             }
         }
 
@@ -215,15 +213,13 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     private static SessionTable getUrlMappingTableForCurrentSession() {
         HttpSession session = Stapler.getCurrentRequest().getSession(true);
 
-        synchronized (session) {
-            SessionTable table = (SessionTable) session.getAttribute(SessionTable.class.getName());
-            if (table == null) {
-                SessionTable sessionTable = new SessionTable();
-                session.setAttribute(SessionTable.class.getName(), table = sessionTable);
-                LOGGER.log(Level.INFO, "Setting a new SessionTable for " + session + ": " + sessionTable);
-            }
-            return table;
+        SessionTable table = (SessionTable) session.getAttribute(SessionTable.class.getName());
+        if (table == null) {
+            SessionTable sessionTable = new SessionTable();
+            session.setAttribute(SessionTable.class.getName(), table = sessionTable);
+            LOGGER.log(Level.INFO, "Setting a new SessionTable for " + session + ": " + sessionTable);
         }
+        return table;
     }
 
     /**
