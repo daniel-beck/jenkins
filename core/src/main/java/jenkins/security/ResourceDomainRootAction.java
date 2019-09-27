@@ -64,23 +64,23 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     }
 
     public HttpResponse doIndex() {
-        return HttpResponses.redirectTo(302, ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl());
+        return HttpResponses.redirectTo(302, getResourceRootUrl());
     }
 
-    public Object getDynamic(String id, StaplerResponse rsp) throws Exception {
+    public Object getDynamic(String id, StaplerRequest req, StaplerResponse rsp) throws Exception {
         UUID uuid = UUID.fromString(id);
-        if (ResourceDomainConfiguration.isResourceRequest(Stapler.getCurrentRequest())) {
+        if (ResourceDomainConfiguration.isResourceRequest(req)) {
             ReferenceHolder holder = globalTable.lookup(uuid);
             if (holder != null) {
                 return holder;
             }
         }
-        rsp.sendRedirect(302, ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl());
+        rsp.sendRedirect(302, getResourceRootUrl());
         return null;
     }
 
     public String getRedirectUrl(String key, String restOfPath) {
-        String rootUrl = ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl();
+        String rootUrl = getResourceRootUrl();
         if (!rootUrl.endsWith("/")) {
             rootUrl += "/";
         }
@@ -88,23 +88,8 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         return fullUrl;
     }
 
-    /**
-     * URL Mapping for the current HTTP session
-     *
-     * @return
-     */
-    private static SessionTable getUrlMappingTableForCurrentSession() {
-        HttpSession session = Stapler.getCurrentRequest().getSession(true);
-
-        synchronized (session) {
-            SessionTable table = (SessionTable) session.getAttribute(SessionTable.class.getName());
-            if (table == null) {
-                SessionTable sessionTable = new SessionTable();
-                session.setAttribute(SessionTable.class.getName(), table = sessionTable);
-                LOGGER.log(Level.INFO, "Setting a new SessionTable for " + session + ": " + sessionTable);
-            }
-            return table;
-        }
+    private static String getResourceRootUrl() {
+        return ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl();
     }
 
     public String register(DirectoryBrowserSupport dbs, StaplerRequest req) {
@@ -142,7 +127,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         private final String browserUrl;
         private final String restOfUrl;
         private final String pathInfo;
-        private final AccessControlled ac;
+        private final WeakReference<AccessControlled> ac;
         private final Object root;
 
         ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authenticationName, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
@@ -153,50 +138,74 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
                 this.authenticationName = authenticationName.getName();
             }
             this.pathInfo = path;
-            this.ac = ac;
+            this.ac = new WeakReference<>(ac);
             this.restOfUrl = restOfUrl.substring(0, restOfUrl.length() - dbsFile.length());
             this.root = root;
         }
 
         public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
-            if (ac != null) {
-                String restOfPath = req.getRestOfPath();
+            AccessControlled ac = this.ac.get();
 
-                // TODO do I want something like this?
-                if (restOfPath.isEmpty()) {
-                    String url = Jenkins.get().getRootUrl() + browserUrl;
-                    LOGGER.log(Level.INFO, "Forwarding a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath + " to url: " + url);
-                    rsp.sendRedirect(302, url);
-                    return;
+            if (ac == null) {
+                rsp.sendError(404, "Resource expired");
+            }
+
+            String restOfPath = req.getRestOfPath();
+
+            // TODO do I want something like this?
+            if (restOfPath.isEmpty()) {
+                String url = Jenkins.get().getRootUrl() + browserUrl;
+                LOGGER.log(Level.INFO, "Forwarding a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath + " to url: " + url);
+                rsp.sendRedirect(302, url);
+                return;
+            }
+
+            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
+
+            Authentication auth = Jenkins.ANONYMOUS;
+            if (authenticationName != null) {
+                User user = User.getById(authenticationName, false);
+                if (user != null) {
+                    auth = user.impersonate();
                 }
+            }
 
-                LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
-
-                Authentication auth = Jenkins.ANONYMOUS;
-                if (authenticationName != null) {
-                    User user = User.getById(authenticationName, false);
-                    if (user != null) {
-                        auth = user.impersonate();
-                    }
-                }
-
-                try (ACLContext unused = ACL.as(auth)) {
-                    Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
-                } catch (AccessDeniedException ade) {
-                    LOGGER.log(Level.INFO, "Failed permission check", ade);
-                    rsp.sendError(403, "Failed permission check: " + ade.getMessage());
-                    return;
-                } catch (Exception e) {
-                    LOGGER.log(Level.INFO, "Something else failed", e);
-                    rsp.sendError(404, "Failed: " + e.getMessage());
-                    return;
-                }
+            try (ACLContext unused = ACL.as(auth)) {
+                Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
+            } catch (AccessDeniedException ade) {
+                LOGGER.log(Level.INFO, "Failed permission check", ade);
+                rsp.sendError(403, "Failed permission check: " + ade.getMessage());
+                return;
+            } catch (Exception e) {
+                LOGGER.log(Level.INFO, "Something else failed", e);
+                rsp.sendError(404, "Failed: " + e.getMessage());
+                return;
             }
         }
 
         @Override
         public String toString() {
             return "[" + super.toString() + ", authentication=" + authenticationName + "; key=" + browserUrl + "]";
+        }
+    }
+
+
+    /**
+     * URL Mapping for the current HTTP session
+     *
+     * @return
+     */
+    private static SessionTable getUrlMappingTableForCurrentSession() {
+        HttpSession session = Stapler.getCurrentRequest().getSession(true);
+
+        synchronized (session) {
+            SessionTable table = (SessionTable) session.getAttribute(SessionTable.class.getName());
+            if (table == null) {
+                SessionTable sessionTable = new SessionTable();
+                session.setAttribute(SessionTable.class.getName(), table = sessionTable);
+                LOGGER.log(Level.INFO, "Setting a new SessionTable for " + session + ": " + sessionTable);
+            }
+            return table;
         }
     }
 

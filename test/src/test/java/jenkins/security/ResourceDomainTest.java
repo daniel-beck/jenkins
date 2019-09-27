@@ -22,7 +22,7 @@ public class ResourceDomainTest {
     @Rule
     public JenkinsRule j = new JenkinsRule();
 
-    public static final String RESOURCE_DOMAIN = "127.0.0.1";
+    private static final String RESOURCE_DOMAIN = "127.0.0.1";
 
     @Before
     public void prepare() throws Exception {
@@ -122,4 +122,6 @@ public class ResourceDomainTest {
     public void workspaceWithPermissions() throws Exception {
 
     }
+
+    // project related action (like HTML Publisher) and rename project -> URL still works (depending on where we start the re-request)
 }
