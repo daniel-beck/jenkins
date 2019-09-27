@@ -84,12 +84,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         if (!rootUrl.endsWith("/")) {
             rootUrl += "/";
         }
-        String fullUrl = rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/");
+        String fullUrl = rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/"); // TODO clean up lazy concatenation
         return fullUrl;
     }
 
     private static String getResourceRootUrl() {
-        return ExtensionList.lookupSingleton(ResourceDomainConfiguration.class).getResourceRootUrl();
+        return ResourceDomainConfiguration.get().getResourceRootUrl();
     }
 
     public String register(DirectoryBrowserSupport dbs, StaplerRequest req) {
@@ -155,12 +155,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             // TODO do I want something like this?
             if (restOfPath.isEmpty()) {
                 String url = Jenkins.get().getRootUrl() + browserUrl;
-                LOGGER.log(Level.INFO, "Forwarding a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath + " to url: " + url);
+                LOGGER.log(Level.INFO, "Forwarding a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + " and restOfPath: " + restOfPath + " to url: " + url);
                 rsp.sendRedirect(302, url);
                 return;
             }
 
-            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + restOfPath);
+            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + " and restOfPath: " + restOfPath);
 
             Authentication auth = Jenkins.ANONYMOUS;
             if (authenticationName != null) {
