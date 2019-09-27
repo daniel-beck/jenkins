@@ -126,7 +126,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
 
         Authentication authentication = Jenkins.getAuthentication();
-        ReferenceHolder holder = new ReferenceHolder(url, dbs, () -> {}, authentication, url, ac, restOfPath, root, dbsFile);
+        ReferenceHolder holder = new ReferenceHolder(url, authentication, url, ac, restOfPath, root, dbsFile);
         UUID uuid = getUrlMappingTableForCurrentSession().register(url, holder);
         globalTable.register(uuid, holder); // TODO this needs to be done in the SessionTable to not get out of sync
         LOGGER.log(Level.INFO, "Registering " + dbs + " for key: " + url + " authentication: " + authentication.getName() + " and got UUID: " + uuid.toString());
@@ -145,13 +145,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         private final AccessControlled ac;
         private final Object root;
 
-        /**
-         *
-         * @param browserUrl identifies this {@link DirectoryBrowserSupport} among others, e.g. "userContent" of "job x ws", or "job x build 5 artifacts"
-         * @param dbs the {@link DirectoryBrowserSupport}
-         * @param permissionCheck implements a permission check, as these URLs will bypass any other permission checks usually encountered through URLs like /job/foo/job/bar/ws.
-         */
-        ReferenceHolder(@Nonnull String browserUrl, @Nonnull DirectoryBrowserSupport dbs, @Nonnull Runnable permissionCheck, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
+        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authentication, String path, AccessControlled ac, String restOfUrl, Object root, String dbsFile) {
             this.browserUrl = browserUrl.substring(0, restOfUrl.length() - dbsFile.length());
             this.authentication = authentication.getName();
             this.pathInfo = path;
