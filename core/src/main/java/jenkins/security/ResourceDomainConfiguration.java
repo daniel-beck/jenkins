@@ -27,8 +27,6 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     private String resourceRootUrl;
 
-    private boolean allowImplicitRegistration;
-
     public ResourceDomainConfiguration() {
         load();
     }
@@ -72,12 +70,5 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
             this.resourceRootUrl = resourceRootUrl;
         }
-    }
-    public boolean isAllowImplicitRegistration() {
-        return allowImplicitRegistration;
-    }
-
-    public void setAllowImplicitRegistration(boolean allowImplicitRegistration) {
-        this.allowImplicitRegistration = allowImplicitRegistration;
     }
 }
