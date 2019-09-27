@@ -2,6 +2,7 @@ package jenkins.security;
 
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.Util;
 import hudson.util.FormValidation;
 import jenkins.diagnostics.RootUrlNotSetMonitor;
 import jenkins.model.GlobalConfiguration;
@@ -10,6 +11,7 @@ import jenkins.util.UrlHelper;
 import net.sf.json.JSONObject;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
@@ -44,13 +46,19 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         return true;
     }
 
-    public FormValidation doCheckResourceRootUrl(String resourceRootUrl) {
+    public FormValidation doCheckResourceRootUrl(@QueryParameter String resourceRootUrl) {
         if (ExtensionList.lookupSingleton(RootUrlNotSetMonitor.class).isActivated()) {
-            // TODO is this a prerequisite?
-            return FormValidation.warning("Can only set resource root URL if regular root URL is set"); // TODO i18n
+            // TODO is this really a prerequisite?
+            return FormValidation.warning("Can only set resource root URL if regular root URL is set."); // TODO i18n
         }
+
+        resourceRootUrl = Util.fixEmptyAndTrim(resourceRootUrl);
+        if (resourceRootUrl == null) {
+            return FormValidation.ok("Without a resource root URL, resources will be served from the main domain with Content-Security-Policy set."); // TODO i18n
+        }
+
         if (!UrlHelper.isValidRootUrl(resourceRootUrl)) {
-            FormValidation.warning("Not a valid URL"); // TODO i18n
+            return FormValidation.warning("Not a valid URL"); // TODO i18n
         }
         return FormValidation.ok();
     }
@@ -67,7 +75,12 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
     }
 
     public static boolean isResourceRequest(HttpServletRequest req) {
-        return get().getResourceRootUrl().contains(req.getHeader("Host")); // TODO implement a proper check
+        return isResourceDomainConfigured() && get().getResourceRootUrl().contains(req.getHeader("Host")); // TODO implement a proper check
+    }
+
+    public static boolean isResourceDomainConfigured() {
+        String resourceRootUrl = get().getResourceRootUrl();
+        return resourceRootUrl != null && !resourceRootUrl.isEmpty();
     }
 
     public static ResourceDomainConfiguration get() {

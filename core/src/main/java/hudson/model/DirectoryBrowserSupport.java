@@ -351,12 +351,11 @@ public final class DirectoryBrowserSupport implements HttpResponse {
             // pseudo file name to let the Stapler set text/plain
             rsp.serveFile(req, in, lastModified, -1, length, "plain.txt");
         } else {
-            boolean isResourceDomainRequest = ResourceDomainConfiguration.isResourceRequest(req);
-            if (resourceRootUrlKey != null && !isResourceDomainRequest) {
+            if (shouldRedirectToResourceDomain(req)) {
                 // redirect to second domain
                 rsp.sendRedirect(302, ExtensionList.lookupSingleton(ResourceDomainRootAction.class).getRedirectUrl(resourceRootUrlKey, req.getRestOfPath()));
             } else {
-                if (!isResourceDomainRequest) {
+                if (!ResourceDomainConfiguration.isResourceRequest(req)) {
                     // if we're serving this from the main domain, set CSP headers
                     String csp = SystemProperties.getString(DirectoryBrowserSupport.class.getName() + ".CSP", DEFAULT_CSP_VALUE);
                     if (!csp.trim().equals("")) {
@@ -370,7 +369,13 @@ public final class DirectoryBrowserSupport implements HttpResponse {
             }
         }
     }
-    
+
+    private boolean shouldRedirectToResourceDomain(StaplerRequest req) {
+        boolean isResourceDomainRequest = ResourceDomainConfiguration.isResourceRequest(req);
+        boolean hasConfiguredResourceDomain = ResourceDomainConfiguration.isResourceDomainConfigured();
+        return resourceRootUrlKey != null && !isResourceDomainRequest && hasConfiguredResourceDomain;
+    }
+
     private List<List<Path>> keepReadabilityOnlyOnDescendants(VirtualFile root, boolean patternUsed, List<List<Path>> pathFragmentsList){
         Stream<List<Path>> pathFragmentsStream = pathFragmentsList.stream().map((List<Path> pathFragments) -> {
             List<Path> mappedFragments = new ArrayList<>(pathFragments.size());
