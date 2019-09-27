@@ -142,25 +142,18 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         private final String restOfUrl;
         private final WeakReference<AccessControlled> ac;
 
-        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authenticationName, AccessControlled ac, String restOfUrl, String dbsFile) {
+        ReferenceHolder(@Nonnull String browserUrl, @Nonnull Authentication authentication, AccessControlled ac, String restOfUrl, String dbsFile) {
             this.browserUrl = browserUrl.substring(0, browserUrl.length() - dbsFile.length());
-            if (authenticationName == Jenkins.ANONYMOUS) {
+            if (authentication == Jenkins.ANONYMOUS) {
                 this.authenticationName = null;
             } else {
-                this.authenticationName = authenticationName.getName();
+                this.authenticationName = authentication.getName();
             }
             this.ac = new WeakReference<>(ac);
             this.restOfUrl = restOfUrl.substring(0, restOfUrl.length() - dbsFile.length());
         }
 
         public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
-            AccessControlled ac = this.ac.get();
-
-            if (ac == null) {
-                // TODO redirect to 'browserUrl'
-                rsp.sendError(404, "Resource expired");
-            }
-
             String restOfPath = req.getRestOfPath();
 
             // TODO do I want something like this?
@@ -171,7 +164,21 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
                 return;
             }
 
-            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + ac + " and restOfUrl: " + restOfUrl + " and restOfPath: " + restOfPath);
+            AccessControlled ac = this.ac.get();
+
+            AccessControlled requestRoot;
+            String requestUrlSuffix;
+            if (DISABLE_URL_SHORTCUT || ac == null) {
+                // we cannot shortcut through AccessControlled, so request full path
+                // TODO if this works well we might want to make it the default? Maybe? Changes behavior around renames and project deletion/creation
+                requestRoot = Jenkins.get();
+                requestUrlSuffix = this.browserUrl;
+            } else {
+                requestRoot = ac;
+                requestUrlSuffix = restOfUrl;
+            }
+
+            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + requestRoot + " and restOfUrl: " + requestUrlSuffix + " and restOfPath: " + restOfPath);
 
             Authentication auth = Jenkins.ANONYMOUS;
             if (authenticationName != null) {
@@ -182,7 +189,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             }
 
             try (ACLContext unused = ACL.as(auth)) {
-                Stapler.getCurrent().invoke(req, rsp, ac, restOfUrl + restOfPath);
+                Stapler.getCurrent().invoke(req, rsp, requestRoot, requestUrlSuffix + restOfPath);
             } catch (AccessDeniedException ade) {
                 LOGGER.log(Level.INFO, "Failed permission check", ade);
                 rsp.sendError(403, "Failed permission check: " + ade.getMessage());
@@ -197,6 +204,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             return "[" + super.toString() + ", authentication=" + authenticationName + "; key=" + browserUrl + "]";
         }
     }
+
+    /**
+     * If enabled, routing will use the full URL to the {@link DirectoryBrowserSupport} instead of shortcutting it
+     * by using a reference to the nearest {@link AccessControlled}.
+     */
+    static boolean DISABLE_URL_SHORTCUT = false;
 
 
     /**
