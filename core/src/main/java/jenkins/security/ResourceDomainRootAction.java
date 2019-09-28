@@ -19,6 +19,7 @@ import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.crypto.Cipher;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
@@ -104,8 +105,12 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         String authenticationName = authentication == Jenkins.ANONYMOUS ? "" : authentication.getName();
 
         String value = authenticationName + ":" + completeUrl;
-        String encrypted = encrypt(value);
-        return encrypted;
+        try {
+            return encrypt(value);
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "Failed to encrypt " + value, ex);
+        }
+        return null;
     }
 
     /**
@@ -160,16 +165,26 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         }
     }
 
-    private String encrypt(String value) {
-        String encrypted = Secret.fromString(value).getEncryptedValue();
-        return Base64.encodeBase64String(encrypted.getBytes());
+    private String encrypt(String value) throws Exception {
+        byte[] iv = KEY.newIv();
+        Cipher cipher = KEY.encrypt(iv);
+        byte[] bytes = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
+
+        return Base64.encodeBase64String(iv) + "_" + Base64.encodeBase64String(bytes);
     }
 
     private String decrypt(String value) {
-        Secret secret = Secret.decrypt(new String(Base64.decodeBase64(value), StandardCharsets.UTF_8)); // TODO FIXME there is no confirmation that the secret is specifically from this feature
-        if (secret == null) {
+        try {
+            byte[] iv = Base64.decodeBase64(value.substring(0, value.indexOf("_")));
+            byte[] encrypted = Base64.decodeBase64(value.substring(value.indexOf("_") + 1));
+            Cipher cipher = KEY.decrypt(iv);
+            byte[] decrypted = cipher.doFinal(encrypted);
+            return new String(decrypted, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "Failure decrypting", ex);
             return null;
         }
-        return secret.getPlainText();
     }
+
+    private static CryptoConfidentialKey KEY = new CryptoConfidentialKey(ResourceDomainRootAction.class, "key");
 }
