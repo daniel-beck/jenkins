@@ -8,7 +8,6 @@ import hudson.model.User;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
 import hudson.security.AccessControlled;
-import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
 import org.acegisecurity.Authentication;
@@ -22,6 +21,8 @@ import javax.annotation.Nonnull;
 import javax.crypto.Cipher;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -77,10 +78,34 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             return null;
         }
 
-        String authenticationName = Util.fixEmpty(metadata.split(":", 2)[0]);
-        String browserUrl = metadata.split(":", 2)[1];
+        String authenticationName = Util.fixEmpty(metadata.split(":", 3)[0]);
+        String epoch = Util.fixEmpty(metadata.split(":", 3)[1]);
+        String browserUrl = metadata.split(":", 3)[2];
 
-        return new ReferenceHolder(browserUrl, authenticationName);
+        long creationDate = Long.parseLong(epoch);
+        long age = new Date().getTime() - creationDate; // TODO check for negative age?
+
+        if (age < TimeUnit.MINUTES.toMillis(2)) { // TODO Use HOURS, minutes is only for testing
+            return new ReferenceHolder(browserUrl, authenticationName);
+        }
+
+        // too old, so redirect to the real file first
+        return new Redirection(browserUrl);
+    }
+
+    private static class Redirection {
+        private final String url;
+
+        public Redirection(String url) {
+            this.url = url;
+        }
+
+        public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
+            String restOfPath = req.getRestOfPath();
+
+            String url = Jenkins.get().getRootUrl() + this.url + restOfPath;
+            rsp.sendRedirect(302, url);
+        }
     }
 
     public String getRedirectUrl(String key, String restOfPath) {
@@ -104,7 +129,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         Authentication authentication = Jenkins.getAuthentication();
         String authenticationName = authentication == Jenkins.ANONYMOUS ? "" : authentication.getName();
 
-        String value = authenticationName + ":" + completeUrl;
+        Date date = new Date();
+
+        String value = authenticationName + ":" + date.getTime() + ":" + completeUrl;
         try {
             return encrypt(value);
         } catch (Exception ex) {
