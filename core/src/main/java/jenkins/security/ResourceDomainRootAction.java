@@ -11,7 +11,6 @@ import hudson.security.AccessControlled;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
 import org.acegisecurity.Authentication;
-import org.apache.commons.codec.binary.Base64;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.*;
@@ -197,13 +196,13 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         Cipher cipher = KEY.encrypt(iv);
         byte[] bytes = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
 
-        return Base64.encodeBase64String(iv) + "_" + Base64.encodeBase64String(bytes);
+        return Util.toHexString(iv) + "_" + Util.toHexString(bytes);
     }
 
     private String decrypt(String value) {
         try {
-            byte[] iv = Base64.decodeBase64(value.substring(0, value.indexOf("_")));
-            byte[] encrypted = Base64.decodeBase64(value.substring(value.indexOf("_") + 1));
+            byte[] iv = Util.fromHexString(value.substring(0, value.indexOf("_")));
+            byte[] encrypted = Util.fromHexString(value.substring(value.indexOf("_") + 1));
             Cipher cipher = KEY.decrypt(iv);
             byte[] decrypted = cipher.doFinal(encrypted);
             return new String(decrypted, StandardCharsets.UTF_8);
