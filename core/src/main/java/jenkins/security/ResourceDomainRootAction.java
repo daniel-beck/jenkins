@@ -20,6 +20,7 @@ import org.kohsuke.stapler.*;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,18 +70,16 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             return null;
         }
 
-        Secret secret = Secret.decrypt(new String(Base64.decodeBase64(id))); // TODO FIXME there is no confirmation that the secret is specifically from this feature
-        if (secret == null) {
+        String metadata = decrypt(id);
+        if (metadata == null) {
             rsp.sendError(404, "Jenkins serves only static files on this domain.");
             return null;
         }
-        String metadata = secret.getPlainText();
 
         String authenticationName = Util.fixEmpty(metadata.split(":", 2)[0]);
         String browserUrl = metadata.split(":", 2)[1];
 
-        ReferenceHolder holder = new ReferenceHolder(browserUrl, authenticationName);
-        return holder;
+        return new ReferenceHolder(browserUrl, authenticationName);
     }
 
     public String getRedirectUrl(String key, String restOfPath) {
@@ -88,8 +87,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         if (!rootUrl.endsWith("/")) {
             rootUrl += "/";
         }
-        String fullUrl = rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/"); // TODO clean up lazy concatenation
-        return fullUrl;
+        return rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/"); // TODO clean up lazy concatenation
     }
 
     private static String getResourceRootUrl() {
@@ -105,8 +103,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         Authentication authentication = Jenkins.getAuthentication();
         String authenticationName = authentication == Jenkins.ANONYMOUS ? "" : authentication.getName();
 
-        Secret secret = Secret.fromString(authenticationName + ":" + completeUrl);
-        return Base64.encodeBase64String(secret.getEncryptedValue().getBytes());
+        String value = authenticationName + ":" + completeUrl;
+        String encrypted = encrypt(value);
+        return encrypted;
     }
 
     /**
@@ -144,7 +143,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
                 }
             }
 
-            try (ACLContext unused = ACL.as(auth)) {
+            try (ACLContext ignored = ACL.as(auth)) {
                 Stapler.getCurrent().invoke(req, rsp, requestRoot, requestUrlSuffix + restOfPath);
             } catch (AccessDeniedException ade) {
                 LOGGER.log(Level.INFO, "Failed permission check", ade);
@@ -159,5 +158,18 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         public String toString() {
             return "[" + super.toString() + ", authentication=" + authenticationName + "; key=" + browserUrl + "]";
         }
+    }
+
+    private String encrypt(String value) {
+        String encrypted = Secret.fromString(value).getEncryptedValue();
+        return Base64.encodeBase64String(encrypted.getBytes());
+    }
+
+    private String decrypt(String value) {
+        Secret secret = Secret.decrypt(new String(Base64.decodeBase64(value), StandardCharsets.UTF_8)); // TODO FIXME there is no confirmation that the secret is specifically from this feature
+        if (secret == null) {
+            return null;
+        }
+        return secret.getPlainText();
     }
 }
