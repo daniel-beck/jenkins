@@ -140,7 +140,6 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             // Unsure whether this can happen -- just be safe here
             restOfPath = "/" + restOfPath;
         }
-        // TODO clean up lazy concatenation
         return resourceRootUrl + getUrlName() + "/" + key + restOfPath;
     }
 
