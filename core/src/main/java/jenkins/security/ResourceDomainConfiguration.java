@@ -51,7 +51,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @since TODO
  */
-@Extension(ordinal = JenkinsLocationConfiguration.ORDINAL-1) // sort just below this
+@Extension(ordinal = JenkinsLocationConfiguration.ORDINAL-1) // sort just below the regular location config
 @Restricted(NoExternalUse.class)
 @Symbol("resourceDomain")
 public class ResourceDomainConfiguration extends GlobalConfiguration {
