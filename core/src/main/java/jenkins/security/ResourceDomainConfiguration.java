@@ -41,6 +41,8 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletRequest;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * Configure the resource root URL, an alternative root URL to serve resources from to not need Content-Security-Policy
@@ -95,16 +97,36 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     public void setResourceRootUrl(String resourceRootUrl) {
         if (doCheckResourceRootUrl(resourceRootUrl).kind == FormValidation.Kind.OK) {
-            // only accept valid configurations
+            // only accept valid configurations, both with and without URL
             this.resourceRootUrl = Util.fixEmpty(resourceRootUrl);
         }
     }
 
+    /**
+     * Returns true if and only if this is a request to URLs under the resource root URL.
+     *
+     * @param req the request to check
+     * @return whether the request is a resource URL request
+     */
     public static boolean isResourceRequest(HttpServletRequest req) {
-        // TODO implement a proper check
-        return isResourceDomainConfigured() && get().getResourceRootUrl().contains(req.getHeader("Host"));
+        if (!isResourceDomainConfigured()) {
+            return false;
+        }
+        String resourceRootUrl = get().getResourceRootUrl();
+        try {
+            String resourceRootHost = new URL(resourceRootUrl).getHost();
+            return resourceRootHost.equals(req.getHeader("Host"));
+        } catch (MalformedURLException ex) {
+            // the URL here cannot be so broken that we cannot call `new URL(String)` on it...
+            return false;
+        }
     }
 
+    /**
+     * Returns true if and only if a domain has been configured to serve resource URLs from
+     *
+     * @return whether a domain has been configured
+     */
     public static boolean isResourceDomainConfigured() {
         String resourceRootUrl = get().getResourceRootUrl();
         return resourceRootUrl != null && !resourceRootUrl.isEmpty();
