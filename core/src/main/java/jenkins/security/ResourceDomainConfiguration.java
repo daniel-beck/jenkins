@@ -37,6 +37,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
@@ -71,20 +72,48 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         return true;
     }
 
-    public FormValidation doCheckResourceRootUrl(@QueryParameter String resourceRootUrl) {
+    public FormValidation doCheckResourceRootUrl(@QueryParameter("resourceRootUrl") String resourceRootUrlString) {
         if (ExtensionList.lookupSingleton(RootUrlNotSetMonitor.class).isActivated()) {
             // This is needed to round-trip expired resource URLs through regular URLs to refresh them,
             // so while it's not required in the strictest sense, it is required.
             return FormValidation.warning(Messages.ResourceDomainConfiguration_NeedsRootURL());
         }
 
-        resourceRootUrl = Util.fixEmptyAndTrim(resourceRootUrl);
-        if (resourceRootUrl == null) {
+        resourceRootUrlString = Util.fixEmptyAndTrim(resourceRootUrlString);
+        if (resourceRootUrlString == null) {
             return FormValidation.ok(Messages.ResourceDomainConfiguration_Empty());
         }
 
-        if (!UrlHelper.isValidRootUrl(resourceRootUrl)) {
+        if (!UrlHelper.isValidRootUrl(resourceRootUrlString)) {
             return FormValidation.warning(Messages.ResourceDomainConfiguration_Invalid());
+        }
+
+        URL resourceRootUrl;
+        try {
+            resourceRootUrl = new URL(resourceRootUrlString);
+        } catch (MalformedURLException ex) {
+            return FormValidation.warning(Messages.ResourceDomainConfiguration_Invalid());
+        }
+
+        String resourceRootUrlHost = resourceRootUrl.getHost();
+        try {
+            String jenkinsRootUrlHost = new URL(JenkinsLocationConfiguration.get().getUrl()).getHost();
+            if (jenkinsRootUrlHost.equals(resourceRootUrlHost)) {
+                return FormValidation.error("Cannot use the same host name for both Jenkins root URL and resource root URL"); // TODO i18n
+            }
+        } catch (Exception ex) {
+            // TODO logging
+            // TODO more appropriate message
+            return FormValidation.warning(Messages.ResourceDomainConfiguration_NeedsRootURL());
+        }
+
+        StaplerRequest currentRequest = Stapler.getCurrentRequest();
+        if (currentRequest != null) {
+            String currentRequestHost = currentRequest.getHeader("Host");
+
+            if (currentRequestHost.equals(resourceRootUrlHost)) {
+                return FormValidation.warning("You're using the same host name for this URL as you're accessing Jenkins with. This might remove your access to Jenkins if you proceed.");
+            }
         }
 
         // TODO perform more elaborate permission checks to prevent users from setting a subdomain?
