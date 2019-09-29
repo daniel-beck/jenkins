@@ -33,6 +33,7 @@ import jenkins.model.GlobalConfigurationCategory;
 import jenkins.model.JenkinsLocationConfiguration;
 import jenkins.util.UrlHelper;
 import net.sf.json.JSONObject;
+import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.QueryParameter;
@@ -52,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 @Extension(ordinal = JenkinsLocationConfiguration.ORDINAL-1) // sort just below this
 @Restricted(NoExternalUse.class)
+@Symbol("resourceDomain")
 public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     private String resourceRootUrl;

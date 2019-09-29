@@ -28,6 +28,7 @@ import hudson.model.AdministrativeMonitor;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.util.HttpResponses;
 import jenkins.util.SystemProperties;
+import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.HttpResponse;
@@ -48,6 +49,12 @@ import java.io.IOException;
 @Extension
 @Restricted(NoExternalUse.class)
 public class ResourceDomainRecommendation extends AdministrativeMonitor {
+
+    @Override
+    public String getDisplayName() {
+        return Messages.ResourceDomainConfiguration_DisplayName();
+    }
+
     @Override
     public boolean isActivated() {
         boolean isResourceRootUrlSet = ResourceDomainConfiguration.get().getResourceRootUrl() != null;

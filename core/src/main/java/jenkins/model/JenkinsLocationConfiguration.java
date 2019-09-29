@@ -52,7 +52,7 @@ public class JenkinsLocationConfiguration extends GlobalConfiguration implements
             SystemProperties.getBoolean(JenkinsLocationConfiguration.class.getName() + ".disableUrlValidation");
     
     @Restricted(NoExternalUse.class)
-    public static final double ORDINAL = Double.MAX_VALUE;
+    public static final int ORDINAL = 200;
 
     /**
      * @deprecated replaced by {@link #jenkinsUrl}
