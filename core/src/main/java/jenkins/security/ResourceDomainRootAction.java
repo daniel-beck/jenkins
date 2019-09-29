@@ -9,6 +9,7 @@ import hudson.security.ACL;
 import hudson.security.ACLContext;
 import hudson.security.AccessControlled;
 import jenkins.model.Jenkins;
+import jenkins.util.SystemProperties;
 import org.acegisecurity.AccessDeniedException;
 import org.acegisecurity.Authentication;
 import org.kohsuke.accmod.Restricted;
@@ -82,9 +83,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         String browserUrl = splits[2];
 
         long creationDate = Long.parseLong(epoch);
-        long age = new Date().getTime() - creationDate; // TODO check for negative age?
+        long age = new Date().getTime() - creationDate;
 
-        if (age < TimeUnit.MINUTES.toMillis(2)) { // TODO Use HOURS, minutes is only for testing
+        if (age >= 0 && age < TimeUnit.MINUTES.toMillis(VALID_FOR_MINUTES)) {
             return new ReferenceHolder(browserUrl, authenticationName);
         }
 
@@ -164,7 +165,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             AccessControlled requestRoot = Jenkins.get();
             String requestUrlSuffix = this.browserUrl;
 
-            LOGGER.log(Level.INFO, "Performing a request as authentication: " + authenticationName + " to object: " + requestRoot + " and restOfUrl: " + requestUrlSuffix + " and restOfPath: " + restOfPath);
+            LOGGER.log(Level.FINE, "Performing a request as authentication: " + authenticationName + " to object: " + requestRoot + " and restOfUrl: " + requestUrlSuffix + " and restOfPath: " + restOfPath);
 
             Authentication auth = Jenkins.ANONYMOUS;
             if (authenticationName != null) {
@@ -212,4 +213,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     }
 
     private static HMACConfidentialKey KEY = new HMACConfidentialKey(ResourceDomainRootAction.class, "key");
+
+    // TODO 2 minutes is only for testing
+    private static /* not final for Groovy */ int VALID_FOR_MINUTES = SystemProperties.getInteger(ResourceDomainRootAction.class.getName() + ".validForMinutes", 2);
 }

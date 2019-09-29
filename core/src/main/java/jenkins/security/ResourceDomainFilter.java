@@ -31,7 +31,9 @@ public class ResourceDomainFilter implements Filter {
             HttpServletRequest httpServletRequest = (HttpServletRequest)servletRequest;
             HttpServletResponse httpServletResponse = (HttpServletResponse)servletResponse;
             String path = httpServletRequest.getPathInfo();
-            if (ResourceDomainConfiguration.isResourceRequest(httpServletRequest) && !path.startsWith("/static-files/") && !path.equals("/static-files")) {
+            if (ResourceDomainConfiguration.isResourceRequest(httpServletRequest)
+                    && !path.startsWith("/static-files/")
+                    && !path.equals("/static-files")) {
                 LOGGER.log(Level.FINE, "Rejecting request to " + httpServletRequest.getRequestURL() + " from " + httpServletRequest.getRemoteAddr() + " on resource domain");
                 httpServletResponse.sendError(404, "Jenkins serves only static files on this domain.");
                 return;
