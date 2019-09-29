@@ -132,12 +132,16 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     }
 
     public String getRedirectUrl(String key, String restOfPath) {
-        String rootUrl = getResourceRootUrl();
-        if (!rootUrl.endsWith("/")) {
-            rootUrl += "/";
+        String resourceRootUrl = getResourceRootUrl();
+        if (!resourceRootUrl.endsWith("/")) {
+            resourceRootUrl += "/";
+        }
+        if (!restOfPath.startsWith("/")) {
+            // Unsure whether this can happen -- just be safe here
+            restOfPath = "/" + restOfPath;
         }
         // TODO clean up lazy concatenation
-        return rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/");
+        return resourceRootUrl + getUrlName() + "/" + key + restOfPath;
     }
 
     private static String getResourceRootUrl() {
@@ -179,8 +183,8 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
             String restOfPath = req.getRestOfPath();
 
-            // TODO do I want something like this?
             if (restOfPath.isEmpty()) {
+                // Do not go through resource URLs for empty rest-of-path
                 String url = Jenkins.get().getRootUrl() + browserUrl;
                 rsp.sendRedirect(302, url);
                 return;
@@ -203,14 +207,19 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
             try (ACLContext ignored = ACL.as(auth)) {
                 Stapler.getCurrent().invoke(req, rsp, requestRoot, requestUrlSuffix + restOfPath);
+                /*
+                TODO I am unsure what to do when this throws an exception.
+                Right now (below) we return 403/404 error pages. A more user-friendly approach is probably to
+                just redirect like we do for expired resource URLs, but the question is whether we'd end up in a
+                redirect loop if the exception is specific to this mode (and the "normal" URLs redirect to resource
+                URLs). That seems even worse.
+                 */
             } catch (AccessDeniedException ade) {
                 LOGGER.log(Level.INFO, "Failed permission check for resource URL access", ade);
                 rsp.sendError(403, "Failed permission check: " + ade.getMessage());
-                // TODO send redirect here like for expired links?
             } catch (Exception e) {
                 LOGGER.log(Level.INFO, "Something else failed for resource URL access", e);
                 rsp.sendError(404, "Failed: " + e.getMessage());
-                // TODO send redirect here like for expired links?
             }
         }
 
