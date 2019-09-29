@@ -56,7 +56,7 @@ public class ResourceDomainRecommendation extends AdministrativeMonitor {
 
     @Override
     public boolean isActivated() {
-        boolean isResourceRootUrlSet = ResourceDomainConfiguration.get().getResourceRootUrl() != null;
+        boolean isResourceRootUrlSet = ResourceDomainConfiguration.isResourceDomainConfigured();
         boolean isOverriddenCSP = SystemProperties.getString(DirectoryBrowserSupport.class.getName() + ".CSP") != null;
         return isOverriddenCSP && !isResourceRootUrlSet;
     }
