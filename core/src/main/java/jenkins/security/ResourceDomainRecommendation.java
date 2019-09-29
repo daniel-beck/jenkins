@@ -27,6 +27,7 @@ import hudson.Extension;
 import hudson.model.AdministrativeMonitor;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.util.HttpResponses;
+import jenkins.util.SystemProperties;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.HttpResponse;
@@ -50,7 +51,7 @@ public class ResourceDomainRecommendation extends AdministrativeMonitor {
     @Override
     public boolean isActivated() {
         boolean isResourceRootUrlSet = ResourceDomainConfiguration.get().getResourceRootUrl() != null;
-        boolean isOverriddenCSP = System.getProperty(DirectoryBrowserSupport.class.getName() + ".CSP") != null;
+        boolean isOverriddenCSP = SystemProperties.getString(DirectoryBrowserSupport.class.getName() + ".CSP") != null;
         return isOverriddenCSP && !isResourceRootUrlSet;
     }
 
