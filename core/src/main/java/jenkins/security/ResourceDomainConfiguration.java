@@ -73,6 +73,9 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
     }
 
     public FormValidation doCheckResourceRootUrl(@QueryParameter("resourceRootUrl") String resourceRootUrlString) {
+        /*
+        TODO Better handle difference between root URLs, host names, and origins.
+         */
         if (ExtensionList.lookupSingleton(RootUrlNotSetMonitor.class).isActivated()) {
             // This is needed to round-trip expired resource URLs through regular URLs to refresh them,
             // so while it's not required in the strictest sense, it is required.
@@ -99,8 +102,7 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         try {
             String jenkinsRootUrlHost = new URL(JenkinsLocationConfiguration.get().getUrl()).getHost();
             if (jenkinsRootUrlHost.equals(resourceRootUrlHost)) {
-                // TODO i18n
-                return FormValidation.error("Cannot use the same host name for both Jenkins root URL and resource root URL");
+                return FormValidation.error(Messages.ResourceDomainConfiguration_SameAsJenkinsRoot());
             }
         } catch (Exception ex) {
             // TODO logging
@@ -113,8 +115,7 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
             String currentRequestHost = currentRequest.getHeader("Host");
 
             if (currentRequestHost.equals(resourceRootUrlHost)) {
-                // TODO i18n
-                return FormValidation.warning("You're using the same host name for this URL as you're accessing Jenkins with. This might remove your access to Jenkins if you proceed.");
+                return FormValidation.warning(Messages.ResourceDomainConfiguration_SameAsCurrent());
             }
         }
 
