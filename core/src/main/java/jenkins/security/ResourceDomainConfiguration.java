@@ -87,6 +87,8 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         if (!UrlHelper.isValidRootUrl(resourceRootUrl)) {
             return FormValidation.warning(Messages.ResourceDomainConfiguration_Invalid());
         }
+
+        // TODO perform more elaborate permission checks to prevent users from setting a subdomain?
         return FormValidation.ok();
     }
 
