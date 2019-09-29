@@ -30,6 +30,7 @@ import hudson.util.FormValidation;
 import jenkins.diagnostics.RootUrlNotSetMonitor;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.GlobalConfigurationCategory;
+import jenkins.model.JenkinsLocationConfiguration;
 import jenkins.util.UrlHelper;
 import net.sf.json.JSONObject;
 import org.kohsuke.accmod.Restricted;
@@ -49,7 +50,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  * @since TODO
  */
-@Extension
+@Extension(ordinal = JenkinsLocationConfiguration.ORDINAL-1) // sort just below this
 @Restricted(NoExternalUse.class)
 public class ResourceDomainConfiguration extends GlobalConfiguration {
 
@@ -57,12 +58,6 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
 
     public ResourceDomainConfiguration() {
         load();
-    }
-
-    @Nonnull
-    @Override
-    public GlobalConfigurationCategory getCategory() {
-        return GlobalConfigurationCategory.get(GlobalConfigurationCategory.Security.class);
     }
 
     @Override
