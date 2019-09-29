@@ -101,7 +101,8 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
     }
 
     public static boolean isResourceRequest(HttpServletRequest req) {
-        return isResourceDomainConfigured() && get().getResourceRootUrl().contains(req.getHeader("Host")); // TODO implement a proper check
+        // TODO implement a proper check
+        return isResourceDomainConfigured() && get().getResourceRootUrl().contains(req.getHeader("Host"));
     }
 
     public static boolean isResourceDomainConfigured() {

@@ -136,7 +136,8 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         if (!rootUrl.endsWith("/")) {
             rootUrl += "/";
         }
-        return rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/"); // TODO clean up lazy concatenation
+        // TODO clean up lazy concatenation
+        return rootUrl + (getUrlName() + "/" + key + "/" + restOfPath).replace("//", "/");
     }
 
     private static String getResourceRootUrl() {
