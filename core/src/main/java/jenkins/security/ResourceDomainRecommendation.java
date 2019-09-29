@@ -28,7 +28,6 @@ import hudson.model.AdministrativeMonitor;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.util.HttpResponses;
 import jenkins.util.SystemProperties;
-import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.HttpResponse;
