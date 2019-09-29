@@ -46,8 +46,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * Configure the resource root URL, an alternative root URL to serve resources from to not need Content-Security-Policy
- * headers, which mess with desired complex output.
+ * Configure the resource root URL, an alternative root URL to serve resources from
+ * to not need Content-Security-Policy headers, which mess with desired complex output.
  *
  * @see ResourceDomainFilter
  * @see ResourceDomainRootAction
@@ -99,7 +99,8 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         try {
             String jenkinsRootUrlHost = new URL(JenkinsLocationConfiguration.get().getUrl()).getHost();
             if (jenkinsRootUrlHost.equals(resourceRootUrlHost)) {
-                return FormValidation.error("Cannot use the same host name for both Jenkins root URL and resource root URL"); // TODO i18n
+                // TODO i18n
+                return FormValidation.error("Cannot use the same host name for both Jenkins root URL and resource root URL");
             }
         } catch (Exception ex) {
             // TODO logging
@@ -112,6 +113,7 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
             String currentRequestHost = currentRequest.getHeader("Host");
 
             if (currentRequestHost.equals(resourceRootUrlHost)) {
+                // TODO i18n
                 return FormValidation.warning("You're using the same host name for this URL as you're accessing Jenkins with. This might remove your access to Jenkins if you proceed.");
             }
         }

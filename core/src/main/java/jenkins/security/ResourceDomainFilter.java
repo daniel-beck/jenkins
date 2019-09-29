@@ -36,8 +36,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Prohibit requests to Jenkins coming through a resource domain URL configured with {@link ResourceDomainConfiguration},
- * except anything going to {@link ResourceDomainRootAction}.
+ * Prohibit requests to Jenkins coming through a resource domain URL configured with
+ * {@link ResourceDomainConfiguration}, except anything going to {@link ResourceDomainRootAction}.
  *
  * @since TODO
  */

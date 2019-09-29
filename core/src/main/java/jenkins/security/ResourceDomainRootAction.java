@@ -49,7 +49,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Root action serving {@link DirectoryBrowserSupport} instances on random URLs to support resource URLs (second domain).
+ * Root action serving {@link DirectoryBrowserSupport} instances
+ * on random URLs to support resource URLs (second domain).
  *
  * @see ResourceDomainConfiguration
  * @see ResourceDomainFilter
