@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2019 CloudBees, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package jenkins.security;
 
 import hudson.Extension;
@@ -28,8 +51,8 @@ import java.util.logging.Logger;
 /**
  * Root action serving {@link DirectoryBrowserSupport} instances on random URLs to support resource URLs (second domain).
  *
- * @see ResourceDomainFilter
  * @see ResourceDomainConfiguration
+ * @see ResourceDomainFilter
  *
  * @since TODO
  */
@@ -86,7 +109,7 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         long age = new Date().getTime() - creationDate;
 
         if (age >= 0 && age < TimeUnit.MINUTES.toMillis(VALID_FOR_MINUTES)) {
-            return new ReferenceHolder(browserUrl, authenticationName);
+            return new InternalResourceRequest(browserUrl, authenticationName);
         }
 
         // too old, so redirect to the real file first
@@ -143,11 +166,11 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
     /**
      * Implements the browsing support for a specific {@link DirectoryBrowserSupport} like permission check.
      */
-    private static class ReferenceHolder {
+    private static class InternalResourceRequest {
         private final String authenticationName;
         private final String browserUrl;
 
-        ReferenceHolder(@Nonnull String browserUrl, String authenticationName) {
+        InternalResourceRequest(@Nonnull String browserUrl, String authenticationName) {
             this.browserUrl = browserUrl;
             this.authenticationName = authenticationName;
         }
@@ -165,7 +188,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             AccessControlled requestRoot = Jenkins.get();
             String requestUrlSuffix = this.browserUrl;
 
-            LOGGER.log(Level.FINE, "Performing a request as authentication: " + authenticationName + " to object: " + requestRoot + " and restOfUrl: " + requestUrlSuffix + " and restOfPath: " + restOfPath);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.log(Level.FINE, "Performing a request as authentication: " + authenticationName + " to object: " + requestRoot + " and restOfUrl: " + requestUrlSuffix + " and restOfPath: " + restOfPath);
+            }
 
             Authentication auth = Jenkins.ANONYMOUS;
             if (authenticationName != null) {
@@ -178,11 +203,13 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             try (ACLContext ignored = ACL.as(auth)) {
                 Stapler.getCurrent().invoke(req, rsp, requestRoot, requestUrlSuffix + restOfPath);
             } catch (AccessDeniedException ade) {
-                LOGGER.log(Level.INFO, "Failed permission check", ade);
+                LOGGER.log(Level.INFO, "Failed permission check for resource URL access", ade);
                 rsp.sendError(403, "Failed permission check: " + ade.getMessage());
+                // TODO send redirect here like for expired links?
             } catch (Exception e) {
-                LOGGER.log(Level.INFO, "Something else failed", e);
+                LOGGER.log(Level.INFO, "Something else failed for resource URL access", e);
                 rsp.sendError(404, "Failed: " + e.getMessage());
+                // TODO send redirect here like for expired links?
             }
         }
 
@@ -214,6 +241,6 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
     private static HMACConfidentialKey KEY = new HMACConfidentialKey(ResourceDomainRootAction.class, "key");
 
-    // TODO 2 minutes is only for testing
-    private static /* not final for Groovy */ int VALID_FOR_MINUTES = SystemProperties.getInteger(ResourceDomainRootAction.class.getName() + ".validForMinutes", 2);
+    @Restricted(NoExternalUse.class)
+    public static /* not final for Groovy */ int VALID_FOR_MINUTES = SystemProperties.getInteger(ResourceDomainRootAction.class.getName() + ".validForMinutes", 30);
 }
