@@ -17,7 +17,6 @@ import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.crypto.Cipher;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
@@ -71,15 +70,16 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
             return null;
         }
 
-        String metadata = decrypt(id);
+        String metadata = decode(id);
         if (metadata == null) {
             rsp.sendError(404, "Jenkins serves only static files on this domain.");
             return null;
         }
 
-        String authenticationName = Util.fixEmpty(metadata.split(":", 3)[0]);
-        String epoch = Util.fixEmpty(metadata.split(":", 3)[1]);
-        String browserUrl = metadata.split(":", 3)[2];
+        String[] splits = metadata.split(":", 3);
+        String authenticationName = Util.fixEmpty(splits[0]);
+        String epoch = splits[1];
+        String browserUrl = splits[2];
 
         long creationDate = Long.parseLong(epoch);
         long age = new Date().getTime() - creationDate; // TODO check for negative age?
@@ -132,9 +132,9 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
 
         String value = authenticationName + ":" + date.getTime() + ":" + completeUrl;
         try {
-            return encrypt(value);
+            return encode(value);
         } catch (Exception ex) {
-            LOGGER.log(Level.WARNING, "Failed to encrypt " + value, ex);
+            LOGGER.log(Level.WARNING, "Failed to encode " + value, ex);
         }
         return null;
     }
@@ -191,26 +191,25 @@ public class ResourceDomainRootAction implements UnprotectedRootAction {
         }
     }
 
-    private String encrypt(String value) throws Exception {
-        byte[] iv = KEY.newIv();
-        Cipher cipher = KEY.encrypt(iv);
-        byte[] bytes = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
-
-        return Util.toHexString(iv) + "_" + Util.toHexString(bytes);
+    private String encode(String value) {
+        String mac = KEY.mac(value);
+        return mac + Util.toHexString((value.getBytes(StandardCharsets.UTF_8)));
     }
 
-    private String decrypt(String value) {
+    private String decode(String value) {
         try {
-            byte[] iv = Util.fromHexString(value.substring(0, value.indexOf("_")));
-            byte[] encrypted = Util.fromHexString(value.substring(value.indexOf("_") + 1));
-            Cipher cipher = KEY.decrypt(iv);
-            byte[] decrypted = cipher.doFinal(encrypted);
-            return new String(decrypted, StandardCharsets.UTF_8);
+            String mac = value.substring(0, 64);
+            String rest = new String(Util.fromHexString(value.substring(64)), StandardCharsets.UTF_8);
+            if (!KEY.checkMac(rest, mac)) {
+                throw new IllegalArgumentException("Failed mac check for " + rest);
+            }
+            return rest;
         } catch (Exception ex) {
-            LOGGER.log(Level.FINE, "Failure decrypting", ex);
+            // Choose log level that hides people messing with the URLs
+            LOGGER.log(Level.FINE, "Failure decoding", ex);
             return null;
         }
     }
 
-    private static CryptoConfidentialKey KEY = new CryptoConfidentialKey(ResourceDomainRootAction.class, "key");
+    private static HMACConfidentialKey KEY = new HMACConfidentialKey(ResourceDomainRootAction.class, "key");
 }
