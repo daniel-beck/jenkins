@@ -143,7 +143,12 @@ public class ResourceDomainConfiguration extends GlobalConfiguration {
         }
         String resourceRootUrl = get().getResourceRootUrl();
         try {
-            String resourceRootHost = new URL(resourceRootUrl).getHost();
+            URL url = new URL(resourceRootUrl);
+            String resourceRootHost = url.getHost();
+            if (url.getPort() != -1) {
+                resourceRootHost += ":" + url.getPort();
+            }
+            // TODO this looks brittle, figure out a better way
             return resourceRootHost.equals(req.getHeader("Host"));
         } catch (MalformedURLException ex) {
             // the URL here cannot be so broken that we cannot call `new URL(String)` on it...
