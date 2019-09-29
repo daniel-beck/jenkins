@@ -89,8 +89,7 @@ public class ResourceDomainTest {
             webClient.setThrowExceptionOnFailingStatusCode(false);
             webClient.setRedirectEnabled(true);
             Page page = webClient.getPage(resourceRootUrl + "static-files/" + UUID.randomUUID().toString());
-            Assert.assertEquals("resource action index page response is 404", 404, page.getWebResponse().getStatusCode());
-            Assert.assertEquals("forwarded to resource root URL", resourceRootUrl, page.getUrl().toString());
+            Assert.assertEquals("resource response is 404", 404, page.getWebResponse().getStatusCode());
         }
 
         j.jenkins.setSecurityRealm(j.createDummySecurityRealm());
