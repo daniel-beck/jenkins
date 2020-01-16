@@ -1529,6 +1529,29 @@ public class Functions {
         doPrintStackTrace(s, t, null, "", new HashSet<>());
         return s.toString();
     }
+
+    /**
+     * Print a throwable, optionally supporting redacting the stack trace
+     * @param t
+     * @param redactStackTrace
+     * @return
+     */
+    public static @Nonnull String printThrowable(@CheckForNull Throwable t, boolean redactStackTrace) {
+        if (t == null) {
+            return Messages.Functions_NoExceptionDetails();
+        }
+        if (redactStackTrace) {
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+            if (t.getMessage() == null || t.getMessage().isEmpty()) {
+                return Messages.Functions_NoExceptionMessage();
+            }
+            return t.getMessage();
+        } else {
+            return printThrowable(t);
+        }
+    }
     private static void doPrintStackTrace(@Nonnull StringBuilder s, @Nonnull Throwable t, @CheckForNull Throwable higher, @Nonnull String prefix, @Nonnull Set<Throwable> encountered) {
         if (!encountered.add(t)) {
             s.append("<cycle to ").append(t).append(">\n");

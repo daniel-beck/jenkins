@@ -28,30 +28,27 @@ THE SOFTWARE.
     This is the page designated by web.xml and UncaughtExceptionHandler to process an exception thrown by us.
   -->
   <st:statusCode value="500" />
-  <l:layout title="Jenkins" norefresh="true">
+  <l:layout title="Jenkins" norefresh="true" type="one-column">
     <l:header />
-    <l:side-panel>
-      <l:task href="https://jenkins.io/" icon="icon-next icon-md" title="${%Jenkins project}"/>
-      <l:task href="https://jenkins.io/redirect/report-an-issue" icon="icon-gear2 icon-md" title="${%Bug tracker}"/>
-      <l:task href="https://jenkins.io/redirect/mailing-lists" icon="icon-search icon-md" title="${%Mailing Lists}"/>
-      <l:task href="https://twitter.com/jenkinsci" icon="icon-user icon-md" title="${%Twitter: @jenkinsci}"/>
-
-    </l:side-panel>
     <l:main-panel>
+      <div style="text-align: center;">
       <h1 style="text-align: center">
         <img src="${imagesURL}/rage.png" height="179" width="154"/> <span style="font-size:50px"><st:nbsp/>${%Oops!}</span>
       </h1>
       <div id="error-description">
-      <p>
-        ${%problemHappened}
-        ${%checkJIRA}
-        ${%vote}
-        ${%pleaseReport}
-        ${%stackTracePlease}
-        ${%checkML}
-      </p>
-      <h2>${%Stack trace}</h2>
-      <pre style="margin:2em; clear:both">${h.printThrowable(request.getAttribute('javax.servlet.error.exception'))}</pre>
+        <h2>${%problemHappened}</h2>
+        <p>${h.printThrowable(request.getAttribute('javax.servlet.error.exception'), true)}</p>
+      </div>
+        <j:choose>
+          <j:when test="${app.hasPermission(app.ADMINISTER)}">
+            <p>For more information about this error, look for the error ID <tt>${request.getAttribute('jenkins.exception.id')}</tt> in the <a href="${rootURL}/log/all">the Jenkins log</a>.</p>
+
+            <p>When <a href="https://jenkins.io/redirect/report-an-issue" target="_blank">reporting this error as a bug to the Jenkins project</a>, please make sure to include the stack trace in the log.</p>
+          </j:when>
+          <j:otherwise>
+            <p>If you did not expect this error to occur, or require assistance, a Jenkins administrator will be able to identify this error in the log by the ID ${request.getAttribute('jenkins.exception.id')}.</p>
+          </j:otherwise>
+        </j:choose>
       </div>
     </l:main-panel>
   </l:layout>

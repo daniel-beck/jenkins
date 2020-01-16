@@ -10,6 +10,7 @@ import org.kohsuke.stapler.compression.CompressionFilter;
 import javax.servlet.ServletException;
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,22 +24,22 @@ public class InstallUncaughtExceptionHandler {
     @Initializer
     public static void init(final Jenkins j) throws IOException {
         CompressionFilter.setUncaughtExceptionHandler(j.servletContext, (e, context, req, rsp) -> {
-                if (rsp.isCommitted()) {
-                    LOGGER.log(isEOFException(e) ? Level.FINE : Level.WARNING, null, e);
-                    return;
+            String id = UUID.randomUUID().toString();
+            LOGGER.log(isEOFException(e) ? Level.FINE : Level.WARNING, "Caught unhandled exception with ID " + id, e);
+            req.setAttribute("javax.servlet.error.exception",e);
+            req.setAttribute("jenkins.exception.id", id);
+
+            try {
+                // If we have an exception, let's see if it's related with missing classes on Java 11. We reach
+                // here with a ClassNotFoundException in an action, for example. Setting the report here is the only
+                // way to catch the missing classes when the plugin uses Thread.currentThread().getContextClassLoader().loadClass
+                MissingClassTelemetry.reportExceptionInside(e);
+                WebApp.get(j.servletContext).getSomeStapler().invoke(req, rsp, j, "/oops");
+            } catch (ServletException | IOException x) {
+                if (!Stapler.isSocketException(x)) {
+                    throw x;
                 }
-                req.setAttribute("javax.servlet.error.exception",e);
-                try {
-                    // If we have an exception, let's see if it's related with missing classes on Java 11. We reach
-                    // here with a ClassNotFoundException in an action, for example. Setting the report here is the only
-                    // way to catch the missing classes when the plugin uses Thread.currentThread().getContextClassLoader().loadClass
-                    MissingClassTelemetry.reportExceptionInside(e);
-                    WebApp.get(j.servletContext).getSomeStapler().invoke(req, rsp, j, "/oops");
-                } catch (ServletException | IOException x) {
-                    if (!Stapler.isSocketException(x)) {
-                        throw x;
-                    }
-                }
+            }
         });
         try {
             Thread.setDefaultUncaughtExceptionHandler(new DefaultUncaughtExceptionHandler());
