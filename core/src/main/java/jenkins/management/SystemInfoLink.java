@@ -63,4 +63,10 @@ public class SystemInfoLink extends ManagementLink {
     public String getUrlName() {
         return "systemInfo";
     }
+
+    @Nonnull
+    @Override
+    public String getCategory() {
+        return Category.STATUS_CATEGORY.toString();
+    }
 }

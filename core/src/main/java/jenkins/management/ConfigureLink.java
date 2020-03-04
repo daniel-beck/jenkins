@@ -62,4 +62,10 @@ public class ConfigureLink extends ManagementLink {
     public String getUrlName() {
         return "configure";
     }
+
+    @Nonnull
+    @Override
+    public String getCategory() {
+        return Category.SYSTEM_CONFIGURATION_CATEGORY.toString();
+    }
 }

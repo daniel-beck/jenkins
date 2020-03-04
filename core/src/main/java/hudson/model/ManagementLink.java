@@ -131,4 +131,37 @@ public abstract class ManagementLink implements ExtensionPoint, Action {
     public boolean getRequiresPOST() {
         return false;
     }
+
+    /**
+     * Category for management link, uses {@code String} so it can be done with core dependency pre-dating the version this feature was added.
+     *
+     * @return
+     * @since TODO
+     */
+    public @Nonnull String getCategory() {
+        return Category.MISC.toString();
+    }
+
+    /**
+     * Categories supported by this version of core.
+     *
+     * @since TODO
+     */
+    public enum Category {
+        SYSTEM_CONFIGURATION_CATEGORY("Configuration"),
+        STATUS_CATEGORY("Status"),
+        TROUBLESHOOTING("Troubleshooting"),
+        TOOLS("Tools"),
+        MISC("Misc");
+
+        private String label;
+
+        Category(String label) {
+            this.label = label;
+        }
+
+        public @Nonnull String getLabel() {
+            return label;
+        }
+    }
 }

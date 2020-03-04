@@ -63,4 +63,10 @@ public class NodesLink extends ManagementLink {
     public String getUrlName() {
         return "computer";
     }
+
+    @Nonnull
+    @Override
+    public String getCategory() {
+        return Category.SYSTEM_CONFIGURATION_CATEGORY.toString();
+    }
 }
