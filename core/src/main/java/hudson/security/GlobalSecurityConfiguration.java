@@ -97,7 +97,7 @@ public class GlobalSecurityConfiguration extends ManagementLink implements Descr
     @Nonnull
     @Override
     public String getCategory() {
-        return Category.SYSTEM_CONFIGURATION_CATEGORY.toString();
+        return Category.SECURITY.toString();
     }
     @POST
     public synchronized void doConfigure(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException, FormException {

@@ -48,11 +48,12 @@ THE SOFTWARE.
     </div>
 
     <j:forEach var="category" items="${it.categorizedManagementLinks.entrySet()}">
-      <h2 class="col-xs-24">${category.key.label}</h2>
+      <h2>${category.key.label}</h2>
+      <div class="manage-page__row">
       <j:forEach var="m" items="${category.value}">
         <j:set var="icon" value="${m.iconClassName != null ? m.iconClassName : m.iconFileName}" />
         <j:if test="${icon!=null}">
-          <div class="manage-option col-sm-24 col-md-12 col-lg-8 col-xlg-6">
+          <div class="manage-option manage-page__column">
           <j:set var="iconUrl" value="${icon.startsWith('/') ? resURL+icon : imagesURL + '/48x48/' + icon}" />
           <j:set var="alt" value="${icon.replaceAll('\\d*\\.[^.]+$', '')}"/>
           ${taskTags!=null and attrs.contextMenu!='false' ? taskTags.add(m.urlName, iconUrl, m.displayName, m.requiresPOST, m.requiresConfirmation) : null}
@@ -60,7 +61,7 @@ THE SOFTWARE.
             <j:when test="${m.requiresConfirmation}">
               <l:confirmationLink href="${m.urlName}" post="${m.requiresPOST}" message="${%are.you.sure(m.displayName)}">
                 <img class="icon" src="${iconUrl}" />
-                <dl style="height:100px;">
+                <dl>
                   <dt>${m.displayName}</dt>
                   <dd><j:out value="${m.description}"/></dd>
                   <dd><st:include it="${m}" page="info.jelly" optional="true"/></dd>
@@ -70,7 +71,7 @@ THE SOFTWARE.
             <j:when test="${m.requiresPOST}">
               <f:link href="${m.urlName}" post="${m.requiresPOST}">
                 <img class="icon" src="${iconUrl}" alt="[${%alt}]"/>
-                <dl style="height:100px;">
+                <dl>
                   <dt>${m.displayName}</dt>
                   <dd><j:out value="${m.description}"/></dd>
                   <dd><st:include it="${m}" page="info.jelly" optional="true"/></dd>
@@ -80,7 +81,7 @@ THE SOFTWARE.
             <j:otherwise>
               <a href="${m.urlName}" title="${m.displayName}">
                 <img class="icon" src="${iconUrl}" alt="manage-option"/>
-                <dl style="height:100px;">
+                <dl>
                   <dt>${m.displayName}</dt>
                   <dd><j:out value="${m.description}"/></dd>
                   <dd><st:include it="${m}" page="info.jelly" optional="true"/></dd>
@@ -91,6 +92,7 @@ THE SOFTWARE.
           </div>
         </j:if>
       </j:forEach>
+      </div>
     </j:forEach>
 
   </l:main-panel>

@@ -67,6 +67,6 @@ public class ReloadLink extends ManagementLink {
     @Nonnull
     @Override
     public String getCategory() {
-        return Category.TROUBLESHOOTING.toString();
+        return Category.TOOLS.toString();
     }
 }

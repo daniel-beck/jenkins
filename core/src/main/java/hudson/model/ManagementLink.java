@@ -151,7 +151,8 @@ public abstract class ManagementLink implements ExtensionPoint, Action {
      * @since TODO
      */
     public enum Category {
-        SYSTEM_CONFIGURATION_CATEGORY("Configuration"),
+        SYSTEM_CONFIGURATION_CATEGORY("General Configuration"),
+        SECURITY("Security"),
         STATUS_CATEGORY("Status"),
         TROUBLESHOOTING("Troubleshooting"),
         TOOLS("Tools and Actions"),
