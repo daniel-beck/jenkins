@@ -31,6 +31,9 @@ import hudson.security.Permission;
 import jenkins.model.Jenkins;
 
 import java.util.List;
+
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
@@ -139,7 +142,7 @@ public abstract class ManagementLink implements ExtensionPoint, Action {
      * @since TODO
      */
     public @Nonnull String getCategory() {
-        return Category.MISC.toString();
+        return Category.UNCATEGORIZED.toString();
     }
 
     /**
@@ -151,8 +154,10 @@ public abstract class ManagementLink implements ExtensionPoint, Action {
         SYSTEM_CONFIGURATION_CATEGORY("Configuration"),
         STATUS_CATEGORY("Status"),
         TROUBLESHOOTING("Troubleshooting"),
-        TOOLS("Tools"),
-        MISC("Misc");
+        TOOLS("Tools and Actions"),
+        MISC("Misc"),
+        @Restricted(DoNotUse.class)
+        UNCATEGORIZED("Uncategorized");
 
         private String label;
 

@@ -4719,7 +4719,7 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
             try {
                 category = ManagementLink.Category.valueOf(categoryName);
             } catch (IllegalArgumentException ex) {
-                category = ManagementLink.Category.MISC;
+                category = ManagementLink.Category.UNCATEGORIZED;
             }
             byCategory.computeIfAbsent(category, c -> new ArrayList<>()).add(link);
         }
