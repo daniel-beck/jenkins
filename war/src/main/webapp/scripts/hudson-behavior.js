@@ -925,7 +925,7 @@ var jenkinsRules = {
     },
 
     // structured form submission
-    "FORM" : function(form) {
+    "FORM[method=post]" : function(form) {
         crumb.appendToForm(form);
         if(Element.hasClassName(form, "no-json"))
             return;
