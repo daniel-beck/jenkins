@@ -40,6 +40,7 @@ import hudson.Launcher.LocalLauncher;
 import hudson.security.csrf.DefaultCrumbIssuer;
 import hudson.security.csrf.GlobalCrumbIssuerConfiguration;
 import jenkins.AgentProtocol;
+import jenkins.diagnostics.StaticJellyListener;
 import jenkins.diagnostics.URICheckEncodingMonitor;
 import jenkins.security.stapler.DoActionFilter;
 import jenkins.security.stapler.StaplerDispatchValidator;
@@ -247,6 +248,7 @@ import org.kohsuke.stapler.framework.adjunct.AdjunctManager;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 import org.kohsuke.stapler.jelly.JellyClassLoaderTearOff;
 import org.kohsuke.stapler.jelly.JellyRequestDispatcher;
+import org.kohsuke.stapler.jelly.ReallyStaticTagLibrary;
 import org.kohsuke.stapler.verb.POST;
 import org.xml.sax.InputSource;
 
@@ -351,9 +353,9 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
 
     @Deprecated
     private InstallState installState;
-    
+
     /**
-     * If we're in the process of an initial setup, 
+     * If we're in the process of an initial setup,
      * this will be set
      */
     private transient SetupWizard setupWizard;
@@ -954,6 +956,8 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
 
             webApp.setDispatchValidator(new StaplerDispatchValidator());
             webApp.setFilteredDispatchTriggerListener(actionListener);
+
+            ReallyStaticTagLibrary.listener = new StaticJellyListener();
 
             //Telemetry: add interceptor classloader
             //These lines allows the catcher to be present on Thread.currentThread().getContextClassLoader() in every plugin which

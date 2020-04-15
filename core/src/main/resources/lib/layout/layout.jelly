@@ -115,7 +115,7 @@ THE SOFTWARE.
     <link rel="mask-icon" href="${rootURL}/images/mask-icon.svg" color="black" />
 
     <!-- are we running as an unit test? -->
-    <script>var isRunAsTest=${h.isUnitTest}; var rootURL="${rootURL}"; var resURL="${resURL}";</script>
+    <script data-evaluated-xss-safe="true">var isRunAsTest=${h.isUnitTest}; var rootURL="${rootURL}"; var resURL="${resURL}";</script>
 
     <script src="${resURL}/scripts/prototype.js" type="text/javascript"/>
     <script src="${resURL}/scripts/behavior.js" type="text/javascript"/>
@@ -147,7 +147,7 @@ THE SOFTWARE.
     <script src="${resURL}/scripts/sortable.js" type="text/javascript"/>
 
     <j:if test="${extensionsAvailable}">
-      <script>
+      <script data-evaluated-xss-safe="true">
           crumb.init("${h.getCrumbRequestField()}", "${h.getCrumb(request)}");
       </script>
     </j:if>

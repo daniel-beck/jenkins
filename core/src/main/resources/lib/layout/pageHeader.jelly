@@ -60,7 +60,7 @@
                     </a>
 
                     <div id="search-box-completion" />
-                    <script>createSearchBox("${searchURL}");</script>
+                    <script data-evaluated-xss-safe="true">createSearchBox("${searchURL}");</script>
                 </div>
             </form>
         </div>

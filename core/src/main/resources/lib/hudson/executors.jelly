@@ -156,7 +156,7 @@ THE SOFTWARE.
     </l:pane>
     <!-- schedule updates only for the full page reload -->
     <j:if test="${ajax==null and h.hasPermission(app.READ)}">
-      <script defer="defer">
+      <script defer="defer" data-evaluated-xss-safe="true">
         refreshPart('executors',"${rootURL}/${h.hasView(it,'ajaxExecutors')?it.url:''}ajaxExecutors");
       </script>
     </j:if>
