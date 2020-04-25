@@ -112,10 +112,13 @@ public class HudsonPrivateSecurityRealm extends AbstractPasswordBasedSecurityRea
     
     /**
      * If true, sign up is not allowed.
-     * <p>
-     * This is a negative switch so that the default value 'false' remains compatible with older installations.
+     *
+     * The historical default behavior was to allow signups, backward compatible to the time before this option existed (pre 1.312).
+     * That's why this is boolean and inverted compared to the exposed API (no need for readResolve that way).
+     * This was changed in Jenkins 2.XXX to have a sane programmatic default for JCasC.
+     * TODO insert appropriate version number above
      */
-    private final boolean disableSignup;
+    private boolean disableSignup = true;
 
     /**
      * If true, captcha will be enabled.
