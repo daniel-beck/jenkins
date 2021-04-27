@@ -427,14 +427,7 @@ public abstract class Slave extends Node implements Serializable {
                     }
                 }
             }
-            
-            URL res = Jenkins.get().servletContext.getResource("/WEB-INF/" + name);
-            if(res==null) {
-                throw new FileNotFoundException(name); // giving up
-            } else {
-                LOGGER.log(Level.FINE, "found {0}", res);
-            }
-            return res;
+            throw new FileNotFoundException(name); // Something went wrong when looking for the jar file
         }
 
         /** Useful for {@code JenkinsRule.createSlave}, {@code mvn jetty:run}, etc. */
