@@ -34,10 +34,11 @@ THE SOFTWARE.
       Icon source raw URL. Only relevant if the 'class' attribute is NOT specified.
     </st:attribute>
 
-    <st:attribute name="onclick">onclick handler.</st:attribute>
+    <st:attribute name="onclick" deprecated="true">onclick handler. Deprecated; look up the icon by ID and attach event handlers that way.</st:attribute>
     <st:attribute name="title">title</st:attribute>
     <st:attribute name="style">style</st:attribute>
     <st:attribute name="tooltip">tooltip</st:attribute>
+    <st:attribute name="id">icon ID, since TODO</st:attribute>
     <st:attribute name="alt">alt</st:attribute>
   </st:documentation>
 
@@ -73,12 +74,11 @@ THE SOFTWARE.
     </j:when>
 
     <j:when test="${iconMetadata.svgSprite and !iconMetadata.buildStatus}">
-      <l:svgIcon class="${attrs.class}" href="${iconSrc}"/>
+      <l:svgIcon class="${attrs.class}" href="${iconSrc}" id="${attrs.id}" />
     </j:when>
 
     <j:otherwise>
-      <img class="${attrs.class}" src="${iconSrc}" style="${imgStyle}" title="${attrs.title}" height="${attrs.height}"
-           alt="${attrs.alt}" width="${attrs.width}" onclick="${attrs.onclick}" tooltip="${attrs.tooltip }"/>
+      <m:img xmlns:m="jelly:hudson.util.jelly.MorphTagLibrary" ATTRIBUTES="${attrs}" EXCEPT="src style" src="${iconSrc}" style="${imgStyle}" />
     </j:otherwise>
   </j:choose>
   
