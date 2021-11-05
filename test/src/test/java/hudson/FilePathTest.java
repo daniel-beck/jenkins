@@ -34,6 +34,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import hudson.model.Node;
+import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -48,6 +49,21 @@ public class FilePathTest {
 
     @Rule
     public JenkinsRule r = new JenkinsRule();
+
+    @Issue("JENKINS-67063")
+    @Test
+    @LocalData
+    public void untarFileOverSymlink() throws Exception {
+        //$ tar tzvf file.txt.tgz
+        //-rw-r--r--  0 501    20         29 Nov  5 14:43 file.txt
+        final FilePath archiveFilePath = new FilePath(new File(r.jenkins.getRootDir(), "file.txt.tgz"));
+        final File destinationFile = new File(r.jenkins.getRootDir(), "destination");
+        final FilePath destinationFilePath = new FilePath(destinationFile);
+        destinationFilePath.child("dir/to").mkdirs();
+        destinationFilePath.child("file.txt").symlinkTo("dir/to/file.txt", TaskListener.NULL); // create symlink
+        destinationFilePath.child("dir/to/file.txt").symlinkTo("dir/to/file.txt", TaskListener.NULL); // create another level of symlink
+        archiveFilePath.untar(destinationFilePath, FilePath.TarCompression.GZIP);
+    }
 
     @Issue("JENKINS-50237")
     @Test
