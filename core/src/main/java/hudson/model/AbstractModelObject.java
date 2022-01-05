@@ -31,6 +31,9 @@ import hudson.search.SearchIndexBuilder;
 import hudson.search.SearchableModelObject;
 import java.io.IOException;
 import javax.servlet.ServletException;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -44,16 +47,30 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 public abstract class AbstractModelObject implements SearchableModelObject {
     /**
      * Displays the error in a page.
+     *
+     * @deprecated Use {@link hudson.util.HttpResponses} instead.
      */
+    @Deprecated
+    @Restricted(NoExternalUse.class) // Used in Job
     protected final void sendError(Exception e, StaplerRequest req, StaplerResponse rsp) throws ServletException, IOException {
         req.setAttribute("exception", e);
         sendError(e.getMessage(), req, rsp);
     }
 
+    /**
+     * @deprecated Use {@link hudson.util.HttpResponses} instead.
+     */
+    @Deprecated
+    @Restricted(DoNotUse.class)
     protected final void sendError(Exception e) throws ServletException, IOException {
         sendError(e, Stapler.getCurrentRequest(), Stapler.getCurrentResponse());
     }
 
+    /**
+     * @deprecated Use {@link hudson.util.HttpResponses} instead.
+     */
+    @Deprecated
+    @Restricted(NoExternalUse.class) // Used in Run
     protected final void sendError(String message, StaplerRequest req, StaplerResponse rsp) throws ServletException, IOException {
         req.setAttribute("message", message);
         rsp.forward(this, "error", req);
@@ -62,7 +79,10 @@ public abstract class AbstractModelObject implements SearchableModelObject {
     /**
      * @param pre
      *      If true, the message is put in a PRE tag.
+     * @deprecated Use {@link hudson.util.HttpResponses} instead.
      */
+    @Deprecated
+    @Restricted(DoNotUse.class)
     protected final void sendError(String message, StaplerRequest req, StaplerResponse rsp, boolean pre) throws ServletException, IOException {
         req.setAttribute("message", message);
         if (pre)
@@ -70,6 +90,11 @@ public abstract class AbstractModelObject implements SearchableModelObject {
         rsp.forward(this, "error", req);
     }
 
+    /**
+     * @deprecated Use {@link hudson.util.HttpResponses} instead.
+     */
+    @Deprecated
+    @Restricted(NoExternalUse.class) // Used in UpdateCenter
     protected final void sendError(String message) throws ServletException, IOException {
         sendError(message, Stapler.getCurrentRequest(), Stapler.getCurrentResponse());
     }
