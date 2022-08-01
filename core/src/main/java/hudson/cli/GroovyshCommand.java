@@ -43,6 +43,7 @@ import jenkins.model.Jenkins;
 import jenkins.model.ScriptListener;
 import jline.TerminalFactory;
 import jline.UnsupportedTerminal;
+import org.codehaus.groovy.runtime.InvokerHelper;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;
 import org.codehaus.groovy.tools.shell.Shell;
@@ -122,9 +123,31 @@ public class GroovyshCommand extends CLICommand {
                 return null;
             }
         };
-        Groovysh shell = new Groovysh(cl, binding, io, registrar);
+        Groovysh shell = new LoggingGroovySh(cl, binding, io, registrar);
         shell.getImports().add("hudson.model.*");
         return shell;
     }
 
+    private static class LoggingGroovySh extends Groovysh {
+        LoggingGroovySh(ClassLoader cl, Binding binding, IO io, Closure registrar) {
+            super(cl, binding, io, registrar);
+        }
+        @Override
+        protected void maybeRecordError(Throwable cause) {
+            ScriptListener.fireScriptEvent(cause.toString(), "groovysh error", User.current());
+            super.maybeRecordError(cause);
+        }
+
+        @Override
+        protected void maybeRecordInput(String line) {
+            ScriptListener.fireScriptEvent(line, "groovysh input", User.current());
+            super.maybeRecordInput(line);
+        }
+
+        @Override
+        protected void maybeRecordResult(Object result) {
+            ScriptListener.fireScriptEvent(InvokerHelper.toString(result), "groovysh result", User.current());
+            super.maybeRecordResult(result);
+        }
+    }
 }
