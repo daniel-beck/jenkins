@@ -36,10 +36,10 @@ THE SOFTWARE.
 						<j:if test="${!info.isReady}">
 							${%blocked}
 						</j:if>
-						<j:if test="${!empty(info.plugins)}">
+						<j:if test="${!empty(info.blockingPlugins)}">
 							<p>${%plugins}</p>
 							<ul>
-								<j:forEach items="${info.plugins}" var="plugin">
+								<j:forEach items="${info.blockingPlugins}" var="plugin">
 									<li>${plugin.displayName}</li>
 								</j:forEach>
 							</ul>
