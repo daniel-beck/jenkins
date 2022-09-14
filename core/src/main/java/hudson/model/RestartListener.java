@@ -6,6 +6,8 @@ import hudson.ExtensionPoint;
 import java.io.IOException;
 import jenkins.model.Jenkins;
 import jenkins.model.queue.AsynchronousExecution;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 /**
  * Extension point that allows plugins to veto the restart.
@@ -64,7 +66,8 @@ public abstract class RestartListener implements ExtensionPoint {
             return true;
         }
 
-        private static boolean blocksRestart(Executor e) {
+        @Restricted(NoExternalUse.class)
+        public static boolean blocksRestart(Executor e) {
             if (e.isBusy()) {
                 AsynchronousExecution execution = e.getAsynchronousExecution();
                 if (execution != null) {

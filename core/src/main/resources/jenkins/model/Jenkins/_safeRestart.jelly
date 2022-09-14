@@ -25,18 +25,54 @@ THE SOFTWARE.
 <!-- Delete view -->
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
-	<l:layout title="Safely Restart Jenkins">
+	<l:layout title="Safely Restart Jenkins" permission="${app.MANAGE}">
 		<st:include page="sidepanel.jelly" />
 		<l:main-panel>
 			<j:choose>
 				<j:when test="${app.lifecycle.canRestart()}">
 					<form method="post" action="safeRestart">
-						${%Are you sure you want to restart Jenkins? Jenkins will restart once all running jobs are finished.}
+						<p>${%question}</p>
+						<j:set var="info" value="${app.getSafeRestartInfo()}"/>
+						<j:if test="${!info.isReady}">
+							${%blocked}
+						</j:if>
+						<j:if test="${!empty(info.plugins)}">
+							<p>${%plugins}</p>
+							<ul>
+								<j:forEach items="${info.plugins}" var="plugin">
+									<li>${plugin.displayName}</li>
+								</j:forEach>
+							</ul>
+						</j:if>
+						<j:if test="${!empty(info.blockingExecutors)}">
+							<p>${%blockingExecutors}</p>
+							<ul>
+								<j:forEach items="${info.blockingExecutors}" var="e">
+									<li><a href="${e.currentExecutable.url}" class="model-link">${e.currentExecutable}</a></li>
+								</j:forEach>
+							</ul>
+						</j:if>
+						<j:if test="${!empty(info.temporarilyBlockingExecutors)}">
+							<p>${%temporarilyBlockingExecutors}</p>
+							<ul>
+								<j:forEach items="${info.temporarilyBlockingExecutors}" var="e">
+									<li><a href="${e.currentExecutable.url}" class="model-link">${e.currentExecutable}</a></li>
+								</j:forEach>
+							</ul>
+						</j:if>
+						<j:if test="${!empty(info.nonblockingExecutors)}">
+							<p>${%nonblockingExecutors}</p>
+							<ul>
+								<j:forEach items="${info.nonblockingExecutors}" var="e">
+									<li><a href="${e.currentExecutable.url}" class="model-link">${e.currentExecutable}</a></li>
+								</j:forEach>
+							</ul>
+						</j:if>
 						<f:submit value="${%Yes}" />
 					</form>
 				</j:when>
 				<j:otherwise>
-					${%Jenkins cannot restart itself as currently configured.}
+					${%cannot}
 				</j:otherwise>
 			</j:choose>
 		</l:main-panel>

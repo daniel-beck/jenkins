@@ -99,6 +99,7 @@ import hudson.model.Descriptor;
 import hudson.model.Descriptor.FormException;
 import hudson.model.DescriptorByNameOwner;
 import hudson.model.DirectoryBrowserSupport;
+import hudson.model.Executor;
 import hudson.model.Failure;
 import hudson.model.Fingerprint;
 import hudson.model.FingerprintCleanupThread;
@@ -268,6 +269,7 @@ import jenkins.diagnostics.URICheckEncodingMonitor;
 import jenkins.install.InstallState;
 import jenkins.install.SetupWizard;
 import jenkins.model.ProjectNamingStrategy.DefaultProjectNamingStrategy;
+import jenkins.model.queue.AsynchronousExecution;
 import jenkins.security.ClassFilterImpl;
 import jenkins.security.ConfidentialKey;
 import jenkins.security.ConfidentialStore;
@@ -4575,6 +4577,51 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
                 }
             }
         }.start();
+    }
+
+    /**
+     * Utility class holding values shown on {@code _safeRestart.jelly}.
+     */
+    @Restricted(NoExternalUse.class)
+    public static class SafeRestartInfo {
+        public final Set<PluginWrapper> blockingPlugins;
+
+        public final boolean isReady;
+        public final ArrayList<Executor> blockingExecutors;
+        public final ArrayList<Executor> temporarilyBlockingExecutors;
+        public final ArrayList<Executor> nonblockingExecutors;
+
+        private SafeRestartInfo() throws IOException, InterruptedException {
+            isReady = RestartListener.isAllReady();
+            blockingPlugins = RestartListener.all().stream().map(l -> Jenkins.get().getPluginManager().whichPlugin(l.getClass())).filter(Objects::nonNull).collect(Collectors.toSet());
+            blockingExecutors = new ArrayList<>();
+            temporarilyBlockingExecutors = new ArrayList<>();
+            nonblockingExecutors = new ArrayList<>();
+
+            for (Computer c : Jenkins.get().getComputers()) {
+                if (c.isOnline()) {
+                    for (Executor e : c.getAllExecutors()) {
+                        if (e.isBusy()) {
+                            AsynchronousExecution asynchronousExecution = e.getAsynchronousExecution();
+                            if (asynchronousExecution == null) {
+                                blockingExecutors.add(e);
+                            } else {
+                                if (asynchronousExecution.blocksRestart()) {
+                                    temporarilyBlockingExecutors.add(e);
+                                } else {
+                                    nonblockingExecutors.add(e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Restricted(NoExternalUse.class)
+    public SafeRestartInfo getSafeRestartInfo() throws IOException, InterruptedException {
+        return new SafeRestartInfo();
     }
 
     @Extension @Restricted(NoExternalUse.class)
