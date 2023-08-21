@@ -117,6 +117,11 @@ public class HudsonPrivateSecurityRealm extends AbstractPasswordBasedSecurityRea
     private static final String DEFAULT_ID_REGEX = "^[\\w-]+$";
 
     /**
+     * Number of rounds for newly hashed passwords.
+     */
+    private static final int BCRYPT_ROUNDS = SystemProperties.getInteger(HudsonPrivateSecurityRealm.class.getName() + ".BCRYPT_ROUNDS", 12);
+
+    /**
      * If true, sign up is not allowed.
      * <p>
      * This is a negative switch so that the default value 'false' remains compatible with older installations.
@@ -784,6 +789,21 @@ public class HudsonPrivateSecurityRealm extends AbstractPasswordBasedSecurityRea
                 return Messages.HudsonPrivateSecurityRealm_Details_DisplayName();
             }
 
+            public FormValidation doCheckPassword(@QueryParameter String value) {
+                String data = Protector.unprotect(value);
+                if (data == null) {
+                    return FormValidation.ok();
+                }
+                final String prefix = Stapler.getCurrentRequest().getSession().getId() + ':';
+                if (data.startsWith(prefix)) {
+                    data = data.substring(prefix.length());
+                }
+                if (PASSWORD_ENCODER.isPasswordHashingRecommended(data)) {
+                    return FormValidation.warningWithMarkup(Messages.HudsonPrivateSecurityRealm_Details_UpgradePassword());
+                }
+                return FormValidation.ok();
+            }
+
             @Override
             public Details newInstance(StaplerRequest req, JSONObject formData) throws FormException {
                 if (req == null) {
@@ -898,7 +918,7 @@ public class HudsonPrivateSecurityRealm extends AbstractPasswordBasedSecurityRea
 
         @Override
         public String encode(CharSequence rawPassword) {
-            return BCrypt.hashpw(rawPassword.toString(), BCrypt.gensalt());
+            return BCrypt.hashpw(rawPassword.toString(), BCrypt.gensalt(BCRYPT_ROUNDS));
         }
 
         @Override
@@ -968,6 +988,27 @@ public class HudsonPrivateSecurityRealm extends AbstractPasswordBasedSecurityRea
             return password.startsWith(JBCRYPT_HEADER) && JBCRYPT_ENCODER.isHashValid(password.substring(JBCRYPT_HEADER.length()));
         }
 
+        public boolean isPasswordHashingRecommended(String hashedPassword) {
+            if (!isPasswordHashed(hashedPassword)) {
+                return false;
+            }
+
+            final String hashedPasswordWithoutPrefix = hashedPassword.substring(JBCRYPT_HEADER.length());
+            final String[] passwordParts = hashedPasswordWithoutPrefix.split("[$]");
+            if (passwordParts.length != 4) {
+                // invalid
+                return false;
+            }
+
+            final int cost;
+            try {
+                cost = Integer.parseInt(passwordParts[2]);
+            } catch (RuntimeException ex) {
+                return false;
+            }
+
+            return cost < BCRYPT_ROUNDS;
+        }
     }
 
     public static final MultiPasswordEncoder PASSWORD_ENCODER = new MultiPasswordEncoder();
