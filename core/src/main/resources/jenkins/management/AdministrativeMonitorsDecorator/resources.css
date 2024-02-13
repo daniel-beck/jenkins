@@ -50,13 +50,13 @@
   box-shadow: var(--dropdown-box-shadow);
   border-radius: 15px;
   opacity: 0;
-  animation: hide-am-list 300ms ease-in 1 normal;
+  animation: hide-am-list 100ms ease-in 1 normal;
   z-index: 0;
 }
 
 .am-container.visible div.am-list {
   opacity: 1;
-  animation: show-am-list 300ms ease-in 1 normal forwards;
+  animation: show-am-list 100ms ease-in 1 normal forwards;
   z-index: 1000;
 }
 
