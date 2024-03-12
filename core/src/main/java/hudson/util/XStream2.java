@@ -308,6 +308,8 @@ public class XStream2 extends XStream {
         int updateLimit = SystemProperties.getInteger(COLLECTION_UPDATE_LIMIT_PROPERTY_NAME, COLLECTION_UPDATE_LIMIT_DEFAULT_VALUE);
         this.setCollectionUpdateLimit(updateLimit);
 
+        this.setMode(SystemProperties.getInteger(XStream2.class.getName() + ".REFERENCES", XStream.NO_REFERENCES));
+
         // list up types that should be marshalled out like a value, without referential integrity tracking.
         addImmutableType(Result.class, false);
 
