@@ -1364,11 +1364,6 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
     @Restricted(NoExternalUse.class)
     public <T> T getCoreLibrary(Class<T> clazz) {
         synchronized (coreLibs) {
-            if (coreLibClassLoader == null && coreLibs.isEmpty()) {
-                LOGGER.log(WARNING, "CoreLibClassLoader not initialized, cannot load service: " + clazz.getName(), new Exception());
-                coreLibs.put(clazz, Optional.empty());
-                return null;
-            }
             if (!coreLibs.containsKey(clazz)) {
                 ServiceLoader<T> loader = ServiceLoader.load(clazz, coreLibClassLoader);
 
