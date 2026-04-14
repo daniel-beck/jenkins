@@ -25,16 +25,13 @@
 package jenkins.core;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.servlet.ServletContext;
-import java.io.File;
-import java.io.FilenameFilter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.kohsuke.accmod.Restricted;
@@ -49,7 +46,6 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 public class CoreLibClassLoader extends URLClassLoader {
 
     private static final Logger LOGGER = Logger.getLogger(CoreLibClassLoader.class.getName());
-    private static final FilenameFilter JAR_FILTER = (dir, name) -> name.endsWith(".jar");
 
     /**
      * Creates a new CoreLibClassLoader.
@@ -75,32 +71,24 @@ public class CoreLibClassLoader extends URLClassLoader {
      * @since TODO
      */
     @NonNull
-    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "WEB-INF is not attacker-controlled")
     public static CoreLibClassLoader initialize(ServletContext context, ClassLoader parent) {
-        String realPath = context.getRealPath("/WEB-INF/core-lib");
-        if (realPath == null) {
-            throw new IllegalStateException("Could not look up real path for WEB-INF/core-lib, failed to initialize CoreLibClassLoader");
-        }
+        final Set<String> resourcePaths = context.getResourcePaths("/WEB-INF/core-lib");
 
-        File coreLibDir =  new File(realPath);
-        if (!coreLibDir.isDirectory()) {
-            throw new IllegalStateException("WEB-INF/core-lib is not a directory, failed to initialize CoreLibClassLoader: " + coreLibDir.getAbsolutePath());
+        if (resourcePaths.isEmpty()) {
+            throw new IllegalStateException("No WEB-INF/core-lib/ resources found");
         }
 
         List<URL> urls = new ArrayList<>();
-        File[] jars = coreLibDir.listFiles(JAR_FILTER);
-        if (jars == null || jars.length == 0) {
-            throw new IllegalStateException("WEB-INF/core-lib empty, failed to initialize CoreLibClassLoader: " + coreLibDir.getAbsolutePath());
-        }
-        for (File jar : Arrays.stream(jars).sorted().toList()) {
-            try {
-                urls.add(jar.toURI().toURL());
-            } catch (MalformedURLException e) {
-                LOGGER.log(Level.WARNING, "Failed to add core-lib JAR: " + jar, e);
+        for (String resourcePath : resourcePaths) {
+            if (resourcePath.endsWith(".jar")) {
+                try {
+                    urls.add(context.getResource(resourcePath));
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException("Failed to get resource from " + resourcePath, e);
+                }
             }
         }
-
-        LOGGER.log(Level.CONFIG, "CoreLibClassLoader initialized from {0}", coreLibDir);
+        LOGGER.log(Level.CONFIG, "CoreLibClassLoader initialized with: " + String.join(", ", resourcePaths));
         return new CoreLibClassLoader(urls.toArray(new URL[0]), parent);
     }
 }
