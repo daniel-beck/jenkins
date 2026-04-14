@@ -72,9 +72,9 @@ public class CoreLibClassLoader extends URLClassLoader {
      */
     @NonNull
     public static CoreLibClassLoader initialize(ServletContext context, ClassLoader parent) {
-        final Set<String> resourcePaths = context.getResourcePaths("/WEB-INF/core-lib");
+        final Set<String> resourcePaths = context.getResourcePaths("/WEB-INF/core-lib/");
 
-        if (resourcePaths.isEmpty()) {
+        if (resourcePaths == null || resourcePaths.isEmpty()) {
             throw new IllegalStateException("No WEB-INF/core-lib/ resources found");
         }
 
