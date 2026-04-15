@@ -247,6 +247,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -1365,12 +1366,18 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
     public <T> T getCoreLibrary(Class<T> clazz) {
         synchronized (coreLibs) {
             if (!coreLibs.containsKey(clazz)) {
-                ServiceLoader<T> loader = ServiceLoader.load(clazz, coreLibClassLoader);
-
-                final Optional<T> result = loader.findFirst().or(Optional::empty);
-                if (result.isEmpty()) {
-                    LOGGER.log(Level.WARNING, "No service implementation found for: {0}", clazz.getName());
+                Optional<T> result;
+                try {
+                    ServiceLoader<T> loader = ServiceLoader.load(clazz, coreLibClassLoader);
+                    result = loader.findFirst().or(Optional::empty);
+                    if (result.isEmpty()) {
+                        LOGGER.log(Level.WARNING, "No service implementation found for: {0}", clazz.getName());
+                    }
+                } catch (ServiceConfigurationError e) {
+                    LOGGER.log(Level.WARNING, e, () -> "No service implementation found for: " + clazz.getName());
+                    result = Optional.empty();
                 }
+
                 coreLibs.put(clazz, result);
                 return result.orElse(null);
             }
