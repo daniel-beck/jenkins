@@ -28,10 +28,11 @@ class CoreLibIsolationTest {
     }
 
     @Test
-    void pluginCannotAccessOwaspClasses(JenkinsRule j) throws Exception {
+    void pluginCannotAccessOwaspClassesOrCoreLibClasses(JenkinsRule j) throws Exception {
         // Get a plugin that doesn't bundle OWASP itself (antisamy-markup-formatter does, so skip it)
         PluginWrapper plugin = j.jenkins.getPluginManager().getPlugins().stream().filter(p -> !"antisamy-markup-formatter".equals(p.getShortName())).findFirst().orElseThrow();
         ClassLoader pluginClassLoader = plugin.classLoader;
+        assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("org.owasp.html.HtmlPolicyBuilder"));
         assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("jenkins.security.OwaspPluginExcerptSanitizer"));
     }
 
