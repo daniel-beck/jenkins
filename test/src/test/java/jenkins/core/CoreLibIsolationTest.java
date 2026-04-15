@@ -32,8 +32,11 @@ class CoreLibIsolationTest {
         // Get a plugin that doesn't bundle OWASP itself (antisamy-markup-formatter does, so skip it)
         PluginWrapper plugin = j.jenkins.getPluginManager().getPlugins().stream().filter(p -> !"antisamy-markup-formatter".equals(p.getShortName())).findFirst().orElseThrow();
         ClassLoader pluginClassLoader = plugin.classLoader;
-        assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("org.owasp.html.HtmlPolicyBuilder"));
-        assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("jenkins.security.OwaspPluginExcerptSanitizer"));
+
+        // The following assertion is fairly brittle, as plugin classloaders have access to dependencies in the local Maven repo that don't match actual behavior during Jenkins runtime.
+        // Once https://github.com/jenkinsci/antisamy-markup-formatter-plugin/pull/174, this assertion will probably fail and should be removed.
+        assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("org.owasp.shim.Java8Shim"), "Plugin was able to load Java8Shim");
+        assertThrows(ClassNotFoundException.class, () -> pluginClassLoader.loadClass("jenkins.security.OwaspPluginExcerptSanitizer"), "Plugin was able to load OwaspPluginExcerptSanitizer: " + plugin.getShortName());
     }
 
     @Test
