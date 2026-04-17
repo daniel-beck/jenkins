@@ -36,7 +36,6 @@ import org.kohsuke.args4j.OptionDef;
 import org.kohsuke.args4j.spi.OptionHandler;
 import org.kohsuke.args4j.spi.Parameters;
 import org.kohsuke.args4j.spi.Setter;
-import org.springframework.security.access.AccessDeniedException;
 
 /**
  * Refers to {@link View} by its name.
@@ -84,8 +83,6 @@ public class ViewOptionHandler extends OptionHandler<View> {
      *      If the view isn't found
      * @throws IllegalStateException
      *      If cannot get active Jenkins instance or view can't contain a views
-     * @throws AccessDeniedException
-     *      If user doesn't have a READ permission for the view
      * @since 1.618
      */
     @CheckForNull
