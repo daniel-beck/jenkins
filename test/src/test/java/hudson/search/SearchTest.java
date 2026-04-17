@@ -383,7 +383,7 @@ public class SearchTest {
 
             List<SearchItem> results1 = new ArrayList<>();
             j.jenkins.getSearchIndex().suggest("foo", results1);
-            assertEquals(1, results.size(), "nonempty results list");
+            assertEquals(1, results1.size(), "nonempty results list");
         });
     }
 
