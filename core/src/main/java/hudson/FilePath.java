@@ -216,12 +216,12 @@ public final class FilePath implements SerializableOnlyOverRemoting {
 
     /**
      * Set to {@code true} to disable validation to ensure that we do not attempt to extract paths that may allow determining the path to the destination directory,
-     * or to {@code false} to enable it. If unset, validation will be done if and only the current JVM is the controller JVM.
+     * or to {@code false} to enable it. If unset, validation will be done if and only if the current JVM is the controller JVM.
      */
     private static /* non-final for script console */ Boolean ALLOW_REENTRY_PATH_TRAVERSAL = SystemProperties.optBoolean(FilePath.class.getName() + ".ALLOW_REENTRY_PATH_TRAVERSAL");
     /**
      * Set to {@code true} to disable prevention of path traversal from crafted tar files,
-     * or to {@code false} to enable it. If unset, validation will be done if and only the current JVM is the controller JVM.
+     * or to {@code false} to enable it. If unset, validation will be done if and only if the current JVM is the controller JVM.
      */
     private static /* non-final for script console */ Boolean ALLOW_UNTAR_SYMLINK_RESOLUTION = SystemProperties.optBoolean(FilePath.class.getName() + ".ALLOW_UNTAR_SYMLINK_RESOLUTION");
 
