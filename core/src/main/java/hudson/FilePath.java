@@ -215,11 +215,13 @@ import org.kohsuke.stapler.Stapler;
 public final class FilePath implements SerializableOnlyOverRemoting {
 
     /**
-     * Set to {@code true} to disable validation to ensure that we do not attempt to extract paths that may allow determining the path to the destination directory.
+     * Set to {@code true} to disable validation to ensure that we do not attempt to extract paths that may allow determining the path to the destination directory,
+     * or to {@code false} to enable it. If unset, validation will be done if and only the current JVM is the controller JVM.
      */
     private static /* non-final for script console */ Boolean ALLOW_REENTRY_PATH_TRAVERSAL = SystemProperties.optBoolean(FilePath.class.getName() + ".ALLOW_REENTRY_PATH_TRAVERSAL");
     /**
-     * Set to {@code true} to disable the fix for SECURITY-3657 that prevents path traversal from crafted tar files.
+     * Set to {@code true} to disable prevention of path traversal from crafted tar files,
+     * or to {@code false} to enable it. If unset, validation will be done if and only the current JVM is the controller JVM.
      */
     private static /* non-final for script console */ Boolean ALLOW_UNTAR_SYMLINK_RESOLUTION = SystemProperties.optBoolean(FilePath.class.getName() + ".ALLOW_UNTAR_SYMLINK_RESOLUTION");
 
@@ -3074,7 +3076,7 @@ public final class FilePath implements SerializableOnlyOverRemoting {
     /**
      * Reads from a tar stream and stores obtained files to the base dir.
      * Supports large files &gt; 10 GB since 1.627.
-     * This prohibits any path traversal out of the base dir, as well as writing through any existing symlinks.
+     * On the Jenkins controller JVM this prohibits any path traversal out of the base dir, as well as writing through any existing symlinks.
      */
     private static void readFromTar(String name, File baseDir, InputStream in, Charset filenamesEncoding) throws IOException {
         final File absoluteBaseDir = baseDir.getAbsoluteFile();
