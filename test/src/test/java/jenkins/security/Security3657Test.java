@@ -120,7 +120,7 @@ public class Security3657Test {
         @Override
         public Void call() throws Exception {
             rootDir.mkdirs();
-            final File linkTar = createTarFile(rootDir, "link.tar", Entry.symlink("foo", "anywhere"), Entry.fileOrDir("anywhere/"));
+            final File linkTar = createTarFile(rootDir, "link.tar", Entry.fileOrDir("anywhere/"), Entry.symlink("foo", "anywhere"));
             final File fileTar = createTarFile(rootDir, "file.tar", Entry.fileOrDir("foo/bar"));
             final File untarDestinationFile = new File(rootDir, "untar-destination");
             final FilePath untarDestinationFilePath = new FilePath(untarDestinationFile);
