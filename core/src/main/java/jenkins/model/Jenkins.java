@@ -1369,7 +1369,7 @@ public class Jenkins extends AbstractCIBase implements DirectlyModifiableTopLeve
                 Optional<T> result;
                 try {
                     ServiceLoader<T> loader = ServiceLoader.load(clazz, coreLibClassLoader);
-                    result = loader.findFirst().or(Optional::empty);
+                    result = loader.findFirst();
                     if (result.isEmpty()) {
                         LOGGER.log(Level.WARNING, "No service implementation found for: {0}", clazz.getName());
                     }

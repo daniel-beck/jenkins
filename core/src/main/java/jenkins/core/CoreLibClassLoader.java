@@ -88,7 +88,6 @@ public class CoreLibClassLoader extends URLClassLoader {
                 }
             }
         }
-        LOGGER.log(Level.CONFIG, "CoreLibClassLoader initialized with: " + String.join(", ", resourcePaths));
         return new CoreLibClassLoader(urls.toArray(new URL[0]), parent);
     }
 }
