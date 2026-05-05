@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2018 CloudBees, Inc.
+ * Copyright (c) 2026, Jan Faracik
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,50 +22,73 @@
  * THE SOFTWARE.
  */
 
-package jenkins.model;
+package jenkins.model.job;
 
 import hudson.Extension;
-import hudson.model.AbstractItem;
 import hudson.model.Action;
+import hudson.model.Job;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
+import jenkins.model.TransientActionFactory;
+import jenkins.model.menu.Group;
 import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.accmod.restrictions.Beta;
 
-@Restricted(NoExternalUse.class)
-public class RenameAction implements Action {
+/**
+ * App bar action that links to the configuration page for a {@link Job}.
+ *
+ * <p>The display name is adjusted depending on whether the user has {@link Job#CONFIGURE}
+ * or only {@link Job#EXTENDED_READ}.
+ *
+ * @since 2.560
+ */
+@Restricted(Beta.class)
+public final class ConfigureJobAction implements Action {
 
-    @Override
-    public String getIconFileName() {
-        return "symbol-edit";
+    private final Job<?, ?> target;
+
+    ConfigureJobAction(Job<?, ?> target) {
+        this.target = target;
     }
 
     @Override
     public String getDisplayName() {
-        return "Rename";
+        return target.hasPermission(Job.CONFIGURE)
+                ? Messages.ConfigureJobAction_Title()
+                : Messages.ConfigureJobAction_ViewConfiguration();
+    }
+
+    @Override
+    public String getIconFileName() {
+        return "symbol-settings";
+    }
+
+    @Override
+    public Group getGroup() {
+        return Group.IN_APP_BAR;
     }
 
     @Override
     public String getUrlName() {
-        return "confirm-rename";
+        return "configure";
     }
 
-    @Extension(ordinal = 70)
-    public static class TransientActionFactoryImpl extends TransientActionFactory<AbstractItem> {
+    @Extension(ordinal = 90)
+    @Restricted(Beta.class)
+    public static final class Factory extends TransientActionFactory<Job> {
 
         @Override
-        public Class<AbstractItem> type() {
-            return AbstractItem.class;
+        public Class<Job> type() {
+            return Job.class;
         }
 
         @Override
-        public Collection<? extends Action> createFor(AbstractItem target) {
-            if (target.isNameEditable()) {
-                return Set.of(new RenameAction());
-            } else {
-                return Collections.emptyList();
+        public Collection<? extends Action> createFor(Job target) {
+            if (!target.hasPermission(Job.CONFIGURE) && !target.hasPermission(Job.EXTENDED_READ)) {
+                return Set.of();
             }
+
+            return Set.of(new ConfigureJobAction(target));
         }
     }
 }

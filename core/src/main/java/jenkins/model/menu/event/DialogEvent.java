@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2018 CloudBees, Inc.
+ * Copyright (c) 2026, Jan Faracik
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,50 +22,26 @@
  * THE SOFTWARE.
  */
 
-package jenkins.model;
+package jenkins.model.menu.event;
 
-import hudson.Extension;
-import hudson.model.AbstractItem;
-import hudson.model.Action;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.accmod.restrictions.Beta;
+import org.kohsuke.stapler.export.ExportedBean;
 
-@Restricted(NoExternalUse.class)
-public class RenameAction implements Action {
+/**
+ * Displays a dialog, contents are lazily loaded when needed.
+ */
+@ExportedBean
+@Restricted(Beta.class)
+public final class DialogEvent {
 
-    @Override
-    public String getIconFileName() {
-        return "symbol-edit";
-    }
-
-    @Override
-    public String getDisplayName() {
-        return "Rename";
-    }
-
-    @Override
-    public String getUrlName() {
-        return "confirm-rename";
-    }
-
-    @Extension(ordinal = 70)
-    public static class TransientActionFactoryImpl extends TransientActionFactory<AbstractItem> {
-
-        @Override
-        public Class<AbstractItem> type() {
-            return AbstractItem.class;
-        }
-
-        @Override
-        public Collection<? extends Action> createFor(AbstractItem target) {
-            if (target.isNameEditable()) {
-                return Set.of(new RenameAction());
-            } else {
-                return Collections.emptyList();
-            }
-        }
+    /**
+     * Create a DialogEvent.
+     * @param url the url of the dialog to load.
+     * @return the event
+     */
+    public static JavaScriptEvent of(String url) {
+        return JavaScriptEvent.of(Map.of("type", "dialog-opener", "dialog-url", url), "");
     }
 }

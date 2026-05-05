@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2018 CloudBees, Inc.
+ * Copyright (c) 2026, Jan Faracik
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,50 +22,62 @@
  * THE SOFTWARE.
  */
 
-package jenkins.model;
+package jenkins.model.job;
 
 import hudson.Extension;
-import hudson.model.AbstractItem;
+import hudson.model.AbstractProject;
 import hudson.model.Action;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
+import jenkins.model.TransientActionFactory;
+import jenkins.model.experimentalflags.NewJobPageUserExperimentalFlag;
 import org.kohsuke.accmod.Restricted;
-import org.kohsuke.accmod.restrictions.NoExternalUse;
+import org.kohsuke.accmod.restrictions.Beta;
 
-@Restricted(NoExternalUse.class)
-public class RenameAction implements Action {
-
-    @Override
-    public String getIconFileName() {
-        return "symbol-edit";
-    }
+/**
+ * App bar action that links to the workspace browser for an {@link AbstractProject}.
+ *
+ * @since 2.560
+ */
+@Restricted(Beta.class)
+public final class WorkspaceAction implements Action {
 
     @Override
     public String getDisplayName() {
-        return "Rename";
+        return Messages.WorkspaceAction_Title();
+    }
+
+    @Override
+    public String getIconFileName() {
+        return "symbol-folder";
     }
 
     @Override
     public String getUrlName() {
-        return "confirm-rename";
+        return "ws";
     }
 
-    @Extension(ordinal = 70)
-    public static class TransientActionFactoryImpl extends TransientActionFactory<AbstractItem> {
+    @Extension
+    @Restricted(Beta.class)
+    public static final class Factory extends TransientActionFactory<AbstractProject> {
 
         @Override
-        public Class<AbstractItem> type() {
-            return AbstractItem.class;
+        public Class<AbstractProject> type() {
+            return AbstractProject.class;
         }
 
         @Override
-        public Collection<? extends Action> createFor(AbstractItem target) {
-            if (target.isNameEditable()) {
-                return Set.of(new RenameAction());
-            } else {
-                return Collections.emptyList();
+        public Collection<? extends Action> createFor(AbstractProject target) {
+            // This condition can be removed when the flag has been removed
+            if (!new NewJobPageUserExperimentalFlag().getFlagValue()) {
+                return Set.of();
             }
+
+            if (!target.hasPermission(AbstractProject.WORKSPACE)) {
+                return Set.of();
+            }
+
+            return Set.of(new WorkspaceAction());
         }
     }
 }
